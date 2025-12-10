@@ -1,0 +1,1801 @@
+{% extends 'simulator/base.html' %}
+
+{% block title %}Land Use Data - All Records{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar Navigation -->
+        <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+            <div class="position-sticky pt-3">
+                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                    <span>Simulation Modules</span>
+                </h6>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'simulator:main_simulation' %}">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'simulator:landuse_list' %}">
+                            <i class="fas fa-map me-2"></i>
+                            Land Use Data
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'simulator:renewable_list' %}">
+                            <i class="fas fa-solar-panel me-2"></i>
+                            Renewable Energy
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'simulator:verbrauch' %}">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Verbrauch
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'simulator:cockpit' %}">
+                            <i class="fas fa-cogs me-2"></i>
+                            Cockpit
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'simulator:annual_electricity' %}">
+                            <i class="fas fa-bolt me-2"></i>
+                            Annual Electricity
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'simulator:bilanz' %}">
+                            <i class="fas fa-balance-scale me-2"></i>
+                            Bilanz
+                        </a>
+                    </li>
+                    {% comment %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'simulator:usecase_diagram' %}">
+                            <i class="fas fa-project-diagram me-2"></i>
+                            Use Case Diagram
+                        </a>
+                    </li>
+                    {% endcomment %}
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Land Use Data Overview</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <span class="badge bg-primary fs-6 me-2">{{ total_count }} Records</span>
+                    {% if latest_run %}
+                    <span class="badge bg-info text-dark me-2">Last calc: {{ latest_run.created_at|date:"Y-m-d H:i" }} ({{ latest_run.duration_ms }} ms)</span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark me-2">No calculation run yet</span>
+                    {% endif %}
+                    <div class="btn-group me-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-download me-1"></i>Export
+                        </button>
+                    </div>
+                    <div class="btn-group me-2">
+                        <button id="run-recalc-btn" type="button" class="btn btn-sm btn-primary" onclick="runFullRecalc()">
+                            <i class="fas fa-play me-1"></i>Calculate &amp; Continue
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Records</h5>
+                        <h2 class="text-primary">{{ total_count }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Categories</h5>
+                        <h2 class="text-success">{{ landuses|length }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Data Source</h5>
+                        <h2 class="text-info">CSV</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Status</h5>
+                        <h2 class="text-warning">Active</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Land Use Categories</h5>
+                <button id="save-all-button" 
+                        class="btn btn-success btn-sm"
+                        onclick="saveAllUserInputs()"
+                        title="Save all your percentage inputs to database">
+                    <i class="fas fa-save me-2"></i>Save All Values
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th class="code-column">Code</th>
+                                <th>Land Use Type / Energy Use</th>
+                                <th class="number-column">Status (ha)</th>
+                                <th class="number-column">Status (%)</th>
+                                <th class="number-column">Target (ha)</th>
+                                <th class="number-column">Target (%)</th>
+                                <th class="number-column">User (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for data in landuse_data %}
+                            <tr>
+                                <td class="code-column">
+                                    <span class="badge bg-secondary">{{ data.landuse.code }}</span>
+                                </td>
+                                <td>
+                                    <strong>{{ data.landuse.name }}</strong>
+                                </td>
+                                <td class="number-column">
+                                    {% if data.landuse.status_ha %}
+                                        {{ data.landuse.status_ha|floatformat:0 }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="number-column">
+                                    {% if data.status_percent %}
+                                        {{ data.status_percent }}%
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="number-column" id="target_ha_{{ data.landuse.id }}">
+                                    {% if data.landuse.target_ha %}
+                                        {{ data.landuse.target_ha|floatformat:0 }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="number-column" id="target_percent_{{ data.landuse.id }}">
+                                    {% if data.target_percent %}
+                                        {{ data.target_percent }}%
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="number-column">
+                                    {% if data.landuse.parent %}
+                                        <input type="number" 
+                                               id="user_percent_{{ data.landuse.id }}"
+                                               step="0.1" 
+                                               min="0" 
+                                               max="100"
+                                               class="form-control form-control-sm user-percent-input"
+                                               value="{{ data.landuse.user_percent|default:'' }}"
+                                               data-code="{{ data.landuse.code }}"
+                                               data-parent="{{ data.landuse.parent.code }}"
+                                               data-parent-status="{{ data.landuse.parent.status_ha }}"
+                                               data-pk="{{ data.landuse.id }}"
+                                               placeholder="Enter %"
+                                               style="width: 90px;">
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-5">
+                                    <h5>No data available</h5>
+                                    <p>Import some CSV data to get started.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Info -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <h6 class="alert-heading">📊 Data Information</h6>
+                    <p class="mb-0">
+                        This data shows land use categories and energy utilization in Germany, including current status and future targets.
+                        The change ratio indicates the relationship between targets and current status.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const CSRF_TOKEN = "{{ csrf_token }}";
+
+// Store all row data for cascading calculations
+let allRowsData = [];
+
+// Initialize data when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initializeRowData();
+    setupEventListeners();
+    // Show initial global allocation status
+    updateGlobalDisplay(0, 100);
+    validateAll();
+});
+
+function setupEventListeners() {
+    // Track last changed input and validate ALL changes
+    document.querySelectorAll('.user-percent-input').forEach(input => {
+        input.addEventListener('focus', (e) => {
+            lastChanged = { 
+                input: e.target, 
+                code: e.target.dataset.code,
+                oldValue: e.target.value 
+            };
+            console.log(`🎯 Focused on ${e.target.dataset.code} (parent: ${e.target.dataset.parent}), old value: ${e.target.value}`);
+        });
+        
+        // Update THIS row as user types, then cascade to children
+        input.addEventListener('input', (e) => {
+            let code = e.target.dataset.code;
+            let value = parseFloat(e.target.value) || 0;
+            
+            console.log(`⌨️ INPUT: ${code} = ${value}%`);
+            
+            // Step 1: Update THIS row's display FIRST (including top-level categories)
+            if (value > 0) {
+                calculateSingleRow(code, value);
+            } else {
+                clearRowCalculations(code);
+            }
+            
+            // Step 2: Then cascade to children
+            cascadeToChildrenProper(code);
+            
+            // Step 3: Update global display
+            updateGlobalOverview();
+        });
+        
+        input.addEventListener('change', (e) => {
+            console.log(`✅ CHANGE COMPLETE: ${e.target.dataset.code} = ${e.target.value}%`);
+            
+            // Backend: save to database after a short delay
+            let pk = e.target.dataset.pk;
+            let userPercent = e.target.value;
+            
+            if (pk && userPercent !== '') {
+                setTimeout(() => {
+                    console.log(`💾 Saving to backend: ${e.target.dataset.code} = ${userPercent}%`);
+                    updateLandUsePercent(pk);
+                }, 100);
+            }
+        });
+    });
+}
+
+function initializeRowData() {
+    allRowsData = [];
+    let rows = document.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        let codeCell = row.cells[0];
+        let nameCell = row.cells[1];
+        let statusHaCell = row.cells[2];
+        let targetHaCell = row.cells[4];
+        let targetPercentCell = row.cells[5];
+        let userInput = row.querySelector('.user-percent-input');
+        
+        if (codeCell && nameCell) {
+            let code = codeCell.textContent.trim();
+            let statusHa = parseFloat(statusHaCell.textContent.replace(/,/g, '')) || 0;
+            let parentCode = userInput ? userInput.dataset.parent : null;
+            let userPercent = (userInput && userInput.value.trim() !== "") 
+                ? parseFloat(userInput.value) 
+                : null;
+            
+            allRowsData.push({
+                code: code,
+                name: nameCell.textContent.trim(),
+                statusHa: statusHa,
+                calculatedStatusHa: statusHa, // Initialize with original value
+                parentCode: parentCode,
+                userPercent: userPercent,
+                rowElement: row,
+                // Store original values for reset functionality
+                originalTargetHa: targetHaCell ? targetHaCell.innerHTML : '-',
+                originalTargetPercent: targetPercentCell ? targetPercentCell.innerHTML : '-'
+            });
+        }
+    });
+    
+    console.log(`📋 Initialized ${allRowsData.length} rows of data`);
+    
+    // Debug: Show parent-child relationships
+    console.log(`📋 PARENT-CHILD RELATIONSHIPS:`);
+    allRowsData.forEach(row => {
+        if (row.parentCode) {
+            console.log(`📋 ${row.code} → parent: ${row.parentCode}`);
+        }
+    });
+}
+
+// Global variable to track last change for rollback
+let lastChanged = null;
+
+function updateTarget(input) {
+    console.log(`🎯 updateTarget called for ${input.dataset.code} = ${input.value}%`);
+    
+    // Update the specific input and recalculate immediately
+    let code = input.dataset.code;
+    let value = parseFloat(input.value) || 0;
+    
+    // Update data model
+    let record = allRowsData.find(r => r.code === code);
+    if (record) {
+        record.userPercent = value;
+    }
+    
+    // Immediate calculation update
+    if (value > 0) {
+        calculateSingleRow(code, value);
+    } else {
+        clearRowCalculations(code);
+    }
+    
+    // Then run full validation
+    validateAll();
+}
+
+function calculateSingleRow(code, userPercent) {
+    console.log(`🔢 Calculating row ${code} with ${userPercent}%`);
+    
+    let row = allRowsData.find(r => r.code === code);
+    if (!row) {
+        console.log(`❌ Row ${code} not found`);
+        return;
+    }
+    
+    // Update data model first
+    row.userPercent = userPercent;
+    
+    // For top-level categories (parent = "LU_0"), calculate from total Germany land
+    if (!row.parentCode || row.parentCode === "LU_0") {
+        // Find root (code = "LU_0") to get total Germany land area
+        let root = allRowsData.find(r => r.code === "LU_0");
+        if (!root) {
+            console.log(`❌ Root not found for ${code}`);
+            return;
+        }
+        
+        let totalGermanyHa = root.statusHa || 0;
+        let targetHa = (totalGermanyHa * userPercent) / 100;
+        
+        console.log(`📊 TOP-LEVEL ${code}: ${userPercent}% of Germany ${totalGermanyHa.toFixed(2)}ha = ${targetHa.toFixed(2)}ha`);
+        
+        // Update display
+        let targetHaCell = row.rowElement.cells[4];
+        let targetPercentCell = row.rowElement.cells[5];
+        
+        targetHaCell.innerHTML = `<strong style="color: #007bff;" title="Calculated: ${userPercent}% of Germany">${formatNumber(targetHa)}</strong>`;
+        targetPercentCell.innerHTML = `<strong style="color: #007bff;">${userPercent.toFixed(1)}%</strong>`;
+        
+        // Store calculated value for children
+        row.calculatedStatusHa = targetHa;
+        return;
+    }
+    
+    // For child categories, calculate from parent
+    let parent = allRowsData.find(r => r.code === row.parentCode);
+    if (!parent) {
+        console.log(`❌ Parent ${row.parentCode} not found for ${code}`);
+        return;
+    }
+    
+    // Use calculated parent value if available
+    let parentHa = parent.calculatedStatusHa || parent.statusHa || 0;
+    let targetHa = (parentHa * userPercent) / 100;
+    
+    console.log(`📊 CHILD ${code}: ${userPercent}% of parent ${parentHa.toFixed(2)}ha = ${targetHa.toFixed(2)}ha`);
+    
+    // Update display immediately
+    let targetHaCell = row.rowElement.cells[4];
+    let targetPercentCell = row.rowElement.cells[5];
+    
+    targetHaCell.innerHTML = `<strong style="color: #007bff;" title="Calculated: ${userPercent}% of parent">${formatNumber(targetHa)}</strong>`;
+    targetPercentCell.innerHTML = `<strong style="color: #007bff;">${userPercent.toFixed(1)}%</strong>`;
+    
+    // Store calculated value
+    row.calculatedStatusHa = targetHa;
+}
+
+function validateAll() {
+    console.log(`🔍 validateAll() called`);
+    
+    // STEP 0: SYNC all input values to allRowsData FIRST
+    syncInputsToData();
+    
+    // STEP 1: IMMEDIATELY check global constraint BEFORE doing anything else
+    // Get ALL top-level categories (1,2,3,4,5) and their ACTUAL percentages (not just user input)
+    let topLevelCategories = allRowsData.filter(r => r.parentCode === "LU_0");
+    let total = 0;
+    let details = [];
+    
+    topLevelCategories.forEach(category => {
+        let input = document.querySelector(`[data-code="${category.code}"]`);
+        let currentPercent = 0;
+        
+        if (input && input.value.trim() !== "") {
+            // User has entered a value - use that
+            currentPercent = parseFloat(input.value) || 0;
+        } else {
+            // No user input - check if this category has any existing percentage
+            let targetPercentCell = category.rowElement.cells[5]; // Target (%) column
+            let targetPercentText = targetPercentCell.textContent.trim();
+            if (targetPercentText !== '-' && targetPercentText !== '') {
+                currentPercent = parseFloat(targetPercentText.replace('%', '')) || 0;
+            }
+        }
+        
+        if (currentPercent > 0) {
+            details.push(`${category.code}: ${currentPercent.toFixed(1)}%`);
+        }
+        total += currentPercent;
+    });
+    
+    console.log(`🌍 IMMEDIATE Global check: ${total.toFixed(1)}% (${details.join(', ')})`);
+    
+    // STEP 2: If > 100%, show prominent GLOBAL LAND USE WARNING
+    if (total > 100) {
+        let overBy = total - 100;
+        
+        // Show prominent warning but don't block the input
+        console.warn(`🚨 CRITICAL: Global land use is ${total.toFixed(1)}% - exceeds physical limit by ${overBy.toFixed(1)}%`);
+        
+        // Add visual warning to ALL top-level category inputs
+        let topLevelInputs = document.querySelectorAll('.user-percent-input[data-parent="LU_0"]');
+        topLevelInputs.forEach(input => {
+            input.classList.add("global-warning");
+            input.title = `🚨 CRITICAL: Total land use ${total.toFixed(1)}% exceeds 100% physical limit!`;
+        });
+        
+        // Show prominent global warning message
+        showGlobalLandWarning(total, overBy, details);
+        
+        // Also add warning to the changed input
+        if (lastChanged) {
+            lastChanged.input.classList.add("warning");
+        }
+    } else {
+        // Remove all global warnings if total is now within limits
+        removeGlobalLandWarning();
+        let topLevelInputs = document.querySelectorAll('.user-percent-input[data-parent="LU_0"]');
+        topLevelInputs.forEach(input => {
+            input.classList.remove("global-warning");
+            input.title = '';
+        });
+        if (lastChanged) {
+            lastChanged.input.classList.remove("warning");
+            lastChanged.input.title = '';
+        }
+    }
+    
+    // STEP 3: Only if global constraint passes, do calculations
+    updateCalculationsRecursive();
+    
+    // STEP 4: After basic calculations, do proper cascading if there was a change
+    if (lastChanged && lastChanged.input) {
+        let changedCode = lastChanged.input.dataset.code;
+        console.log(`🎯 CASCADING from changed input: ${changedCode}`);
+        
+        // Do proper cascading from the changed input
+        cascadeToChildrenProper(changedCode);
+    }
+    
+    updateGlobalOverview();
+    
+    // Debug current state
+    debugCurrentState();
+    
+    // Then validate siblings if there was a change
+    if (!lastChanged) {
+        console.log(`⚠️ No lastChanged data, skipping sibling validation`);
+        return;
+    }
+    
+    let changedInput = lastChanged.input;
+    let newValue = parseFloat(changedInput.value) || 0;
+    let parentCode = changedInput.dataset.parent;
+    
+    console.log(`🔍 Validating ${changedInput.dataset.code} (parent: ${parentCode}) = ${newValue}%`);
+    
+    // Calculate total of all siblings (same parent)
+    let siblingInputs = document.querySelectorAll(`[data-parent="${parentCode}"]`);
+    let siblingTotal = 0;
+    let siblingDetails = [];
+    
+    siblingInputs.forEach(input => {
+        let value = parseFloat(input.value) || 0;
+        let code = input.dataset.code;
+        if (value > 0) {
+            siblingDetails.push(`${code}: ${value}%`);
+        }
+        siblingTotal += value;
+    });
+    
+    console.log(`📊 Sibling total for parent ${parentCode}: ${siblingTotal.toFixed(1)}%`);
+    
+    // Check if siblings exceed 100% of their parent - show warning but allow
+    if (siblingTotal > 100) {
+        let overBy = siblingTotal - 100;
+        let parentName = getParentName(parentCode);
+        
+        // Show warning but don't block the input
+        console.warn(`⚠️ WARNING: Children of ${parentName} total ${siblingTotal.toFixed(1)}% (exceeds by ${overBy.toFixed(1)}%)`);
+        
+        // Add visual warning to the input field
+        if (lastChanged) {
+            lastChanged.input.classList.add("warning");
+            lastChanged.input.title = `Warning: Children total ${siblingTotal.toFixed(1)}% (exceeds parent by ${overBy.toFixed(1)}%)`;
+            setTimeout(() => {
+                lastChanged.input.classList.remove("warning");
+                lastChanged.input.title = '';
+            }, 5000);
+        }
+        
+        // Show warning message but continue
+        showValidationMessage(parentCode, 'warning', 
+            `⚠️ ${parentName}: Child allocations total ${siblingTotal.toFixed(1)}% (exceeds 100% by ${overBy.toFixed(1)}%). Consider adjusting.`);
+    } else {
+        // Remove warning if total is now within limits
+        removeValidationMessage(parentCode);
+        if (lastChanged) {
+            lastChanged.input.classList.remove("warning");
+            lastChanged.input.title = '';
+        }
+    }
+    
+}
+
+function validateParentConstraint() {
+    if (!lastChanged) return true;
+    
+    let record = allRowsData.find(r => r.code === lastChanged.code);
+    if (!record || !record.parentCode) return true; // No parent constraint for top-level
+    
+    // Get all siblings of the same parent
+    let siblings = allRowsData.filter(r => r.parentCode === record.parentCode);
+    
+    // Update sibling values from current input fields
+    siblings.forEach(sibling => {
+        let inputElement = document.querySelector(`[data-code="${sibling.code}"]`);
+        if (inputElement) {
+            let currentValue = parseFloat(inputElement.value) || 0;
+            if (inputElement.value === '') currentValue = 0;
+            sibling.userPercent = currentValue;
+        }
+    });
+    
+    // Calculate total
+    let total = siblings.reduce((sum, r) => sum + (r.userPercent || 0), 0);
+    
+    if (total > 100) {
+        let parentName = allRowsData.find(r => r.code === record.parentCode)?.name || record.parentCode;
+        alert(`❌ Invalid: "${parentName}" total = ${total.toFixed(1)}%, must be ≤ 100%\n\nSiblings:\n${siblings.filter(s => s.userPercent > 0).map(s => `• ${s.code}: ${s.userPercent.toFixed(1)}%`).join('\n')}`);
+        
+        // Rollback the last change
+        rollbackLastChange();
+        return false;
+    }
+    
+    return true;
+}
+
+function validateGlobalConstraint() {
+    // Calculate total from ALL top-level categories (1,2,3,4,5) 
+    let topLevelInputs = document.querySelectorAll('.user-percent-input[data-parent="LU_0"]');
+    let total = 0;
+    let details = [];
+    
+    topLevelInputs.forEach(input => {
+        let value = parseFloat(input.value) || 0;
+        if (input.value.trim() === '') value = 0; // treat empty as 0
+        let code = input.dataset.code;
+        if (value > 0) {
+            details.push(`${code}: ${value}%`);
+        }
+        total += value;
+    });
+    
+    console.log(`🌍 Global constraint check: ${total.toFixed(1)}% (${details.join(', ')})`);
+    
+    if (total > 100) {
+        let overBy = total - 100;
+        
+        // Show warning but don't block
+        console.warn(`⚠️ WARNING: Global total is ${total.toFixed(1)}% (exceeds by ${overBy.toFixed(1)}%)`);
+        
+        // Show non-blocking warning message
+        showValidationMessage('global-constraint', 'warning', 
+            `⚠️ Global total: ${total.toFixed(1)}% (exceeds 100% by ${overBy.toFixed(1)}%). Consider reducing values for better balance.`);
+        
+        return false; // Still return false for validation checks
+    } else {
+        removeValidationMessage('global-constraint');
+    }
+    
+    return true;
+}
+
+function rollbackLastChange() {
+    if (!lastChanged) return;
+    
+    // Restore old value in input field
+    lastChanged.input.value = lastChanged.oldValue || '';
+    lastChanged.input.classList.add("error");
+    lastChanged.input.focus(); // Keep focus for user to try again
+    setTimeout(() => lastChanged.input.classList.remove("error"), 2000);
+    
+    console.log(`🔄 Rolled back ${lastChanged.input.dataset.code} to ${lastChanged.oldValue}%`);
+}
+
+function getParentName(parentCode) {
+    let parentRow = allRowsData.find(r => r.code === parentCode);
+    return parentRow ? parentRow.name : `Code ${parentCode}`;
+}
+
+function updateCalculationsRecursive() {
+    // Start recursive calculation from root (code "0")
+    calculatePercentagesRecursive("0");
+}
+
+function calculatePercentagesRecursive(parentCode) {
+    console.log(`🔄 Calculating for parent: ${parentCode}`);
+    
+    // Find parent data
+    let parent = allRowsData.find(row => row.code === parentCode);
+    if (!parent) return;
+    
+    // Use calculated value if available (from parent calculation), otherwise use original
+    let parentHa = parent.calculatedStatusHa || parent.statusHa || 0;
+    console.log(`📊 Parent ${parentCode} has ${parentHa.toFixed(2)} ha (${parent.calculatedStatusHa ? 'calculated' : 'original'})`);
+    
+    // Find all direct children
+    let children = allRowsData.filter(row => row.parentCode === parentCode);
+    
+    children.forEach(child => {
+        // Get current user percentage from input
+        let input = document.querySelector(`[data-code="${child.code}"]`);
+        let userPercent = input && input.value.trim() !== "" ? parseFloat(input.value) : null;
+        
+        if (userPercent !== null && !isNaN(userPercent) && userPercent > 0 && parentHa > 0) {
+            // ✅ Only compute if user actually typed something
+            let targetHa = (parentHa * userPercent) / 100;
+            updateChildDisplay(child.code, userPercent, targetHa);
+            child.calculatedStatusHa = targetHa;
+            
+            console.log(`📈 Child ${child.code}: ${userPercent}% of ${parentHa.toFixed(2)} = ${targetHa.toFixed(2)} ha`);
+        } else {
+            // ✅ No input → reset display, don't fallback to Excel
+            clearChildDisplay(child.code);
+            child.calculatedStatusHa = null;
+        }
+        
+        // ✅ Always recurse so descendants also reset
+        calculatePercentagesRecursive(child.code);
+    });
+}
+
+function updateChildDisplay(code, userPercent, targetHa) {
+    let row = allRowsData.find(r => r.code === code);
+    if (!row) return;
+    
+    let targetHaCell = row.rowElement.cells[4]; // Target (ha) column  
+    let targetPercentCell = row.rowElement.cells[5]; // Target (%) column
+    
+    targetHaCell.innerHTML = `<strong style="color: #007bff;" title="Calculated: ${userPercent}% of parent">${formatNumber(targetHa)}</strong>`;
+    targetPercentCell.innerHTML = `<strong style="color: #007bff;">${userPercent.toFixed(1)}%</strong>`;
+}
+
+function clearChildDisplay(code) {
+    let row = allRowsData.find(r => r.code === code);
+    if (!row) return;
+    
+    let targetHaCell = row.rowElement.cells[4];
+    let targetPercentCell = row.rowElement.cells[5];
+    
+    targetHaCell.innerHTML = row.originalTargetHa || '-';
+    targetPercentCell.innerHTML = row.originalTargetPercent || '-';
+}
+
+function updateGlobalOverview() {
+    // Calculate total for top-level categories only (for overview)
+    let topLevelInputs = document.querySelectorAll('.user-percent-input[data-parent="LU_0"]');
+    let total = 0;
+    
+    topLevelInputs.forEach(input => {
+        let value = parseFloat(input.value) || 0;
+        total += value;
+    });
+    
+    let remaining = Math.max(0, 100 - total);
+    updateGlobalDisplay(total, remaining);
+}
+
+function updateCalculationsForAllInputs() {
+    // Update all input fields to sync with data model and calculate targets
+    document.querySelectorAll('.user-percent-input').forEach(input => {
+        let code = input.dataset.code;
+        let record = allRowsData.find(r => r.code === code);
+        let value = parseFloat(input.value) || 0;
+        
+        if (record) {
+            record.userPercent = value;
+            
+            if (value > 0) {
+                // Calculate and update target values
+                updateRowCalculations(code);
+                
+                // Also update any children if this has cascading effects
+                cascadeToChildren(code);
+            } else {
+                // Clear target values if percentage is 0
+                clearRowCalculations(code);
+            }
+        }
+    });
+    
+    // Update parent remaining displays
+    let parentsWithChildren = [...new Set(allRowsData.filter(r => r.parentCode).map(r => r.parentCode))];
+    parentsWithChildren.forEach(parentCode => {
+        if (parentCode) {
+            updateRemainingDisplay(parentCode, getSiblingTotal(parentCode));
+        }
+    });
+}
+
+function clearRowCalculations(code) {
+    let row = allRowsData.find(r => r.code === code);
+    if (!row) return;
+    
+    // Reset to original values
+    let targetHaCell = row.rowElement.cells[4];
+    let targetPercentCell = row.rowElement.cells[5];
+    
+    targetHaCell.innerHTML = row.originalTargetHa || '-';
+    targetPercentCell.innerHTML = row.originalTargetPercent || '-';
+    
+    // Clear calculated values
+    row.calculatedStatusHa = null;
+}
+
+function updateGlobalDisplay(total, remaining) {
+    let globalElement = document.getElementById("global-allocation");
+    if (!globalElement) {
+        globalElement = document.createElement('div');
+        globalElement.id = 'global-allocation';
+        globalElement.className = 'mb-3';
+        
+        // Add to page before the table card
+        let container = document.querySelector('.row .col-12');
+        let tableCard = document.querySelector('.card');
+        container.insertBefore(globalElement, tableCard);
+    }
+    
+    let alertClass = 'alert-info';
+    let content = '';
+    
+    if (total === 0) {
+        alertClass = 'alert-info';
+        content = `
+            <strong>🌍 GLOBAL LAND ALLOCATION</strong><br>
+            No allocations yet. 100% available for assignment.
+        `;
+    } else if (total > 100) {
+        alertClass = 'alert-danger';
+        let overBy = total - 100;
+        content = `
+            <strong>🚨 CRITICAL: LAND USE EXCEEDS PHYSICAL LIMIT!</strong><br>
+            <span style="font-size: 1.2em; font-weight: bold;">Total: ${total.toFixed(1)}% | Excess: +${overBy.toFixed(1)}%</span><br>
+            <small class="text-danger">⚠️ Germany's total land area is 100%. Current allocation exceeds physical reality!</small>
+        `;
+        globalElement.style.animation = 'pulse-warning 2s infinite';
+    } else if (total > 95) {
+        alertClass = 'alert-warning';
+        content = `
+            <strong>⚠️ GLOBAL LAND ALLOCATION - NEARING LIMIT</strong><br>
+            Total: ${total.toFixed(1)}% | Remaining: ${remaining.toFixed(1)}%<br>
+            <small>Almost fully allocated. Only ${remaining.toFixed(1)}% left.</small>
+        `;
+        globalElement.style.animation = '';
+    } else {
+        alertClass = 'alert-success';
+        content = `
+            <strong>🌍 GLOBAL LAND ALLOCATION</strong><br>
+            Total: ${total.toFixed(1)}% | Remaining: ${remaining.toFixed(1)}%<br>
+            <small>✅ ${remaining.toFixed(1)}% still available for allocation.</small>
+        `;
+        globalElement.style.animation = '';
+    }
+    
+    globalElement.innerHTML = `<div class="alert ${alertClass}">${content}</div>`;
+}
+
+// Sync all input field values to the allRowsData structure
+function syncInputsToData() {
+    console.log(`🔄 Syncing input values to data structure...`);
+    document.querySelectorAll('.user-percent-input').forEach(input => {
+        let code = input.dataset.code;
+        let record = allRowsData.find(r => r.code === code);
+        let value = input.value.trim() !== "" ? parseFloat(input.value) : null;
+        
+        if (record) {
+            record.userPercent = value;
+            console.log(`🔄 Sync: ${code} = ${value}%`);
+        }
+    });
+}
+
+// Debug function to show current state
+function debugCurrentState() {
+    console.log("🐛 CURRENT STATE DEBUG:");
+    allRowsData.forEach(row => {
+        if (row.userPercent > 0 || row.calculatedStatusHa !== row.statusHa) {
+            console.log(`🐛 ${row.code}: user=${row.userPercent}%, orig=${row.statusHa.toFixed(2)}ha, calc=${row.calculatedStatusHa?.toFixed(2) || 'null'}ha`);
+        }
+    });
+}
+
+// Cascading function that ensures parent values are updated first, then children
+function cascadeToChildrenProper(parentCode) {
+    console.log(`🎯 PROPER CASCADE from ${parentCode}`);
+    
+    // First, ensure the parent's own calculatedStatusHa is correct
+    let parentRow = allRowsData.find(r => r.code === parentCode);
+    if (!parentRow) {
+        console.log(`🎯 Parent ${parentCode} not found`);
+        return;
+    }
+    
+    // If this parent has its own parent and user input, calculate its own value first
+    if (parentRow.parentCode && parentRow.userPercent > 0) {
+        let grandparent = allRowsData.find(r => r.code === parentRow.parentCode);
+        if (grandparent) {
+            let grandparentHa = grandparent.calculatedStatusHa || grandparent.statusHa;
+            let newParentHa = (grandparentHa * parentRow.userPercent) / 100;
+            parentRow.calculatedStatusHa = newParentHa;
+            console.log(`🎯 Updated parent ${parentCode}: ${parentRow.userPercent}% of ${grandparentHa.toFixed(2)} = ${newParentHa.toFixed(2)}ha`);
+        }
+    }
+    
+    // Now cascade to all children - both with and without user input
+    let children = allRowsData.filter(r => r.parentCode === parentCode);
+    
+    // Debug logging for LU_3 children
+    if (parentCode === "LU_3") {
+        console.log(`🔍 DEBUG: Cascading from LU_3`);
+        console.log(`🔍 Parent LU_3 calculatedStatusHa: ${parentRow.calculatedStatusHa}`);
+        console.log(`🔍 Parent LU_3 statusHa: ${parentRow.statusHa}`);
+        console.log(`🔍 Children found: ${children.map(c => c.code).join(', ')}`);
+    }
+    
+    children.forEach(child => {
+        // Get parent's current value (either calculated or original)
+        let parentHa = parentRow.calculatedStatusHa || parentRow.statusHa;
+        
+        // Debug logging for LU_3.2 specifically
+        if (child.code === "LU_3.2") {
+            console.log(`🔍 DEBUG LU_3.2: Parent (${parentCode}) Ha = ${parentHa.toFixed(2)}`);
+        }
+        
+        // Check if child has user input
+        let childInput = document.querySelector(`[data-code="${child.code}"]`);
+        let childUserPercent = childInput && childInput.value.trim() !== "" ? parseFloat(childInput.value) : null;
+        
+        if (child.code === "LU_3.2") {
+            console.log(`🔍 DEBUG LU_3.2: Input element found: ${!!childInput}`);
+            console.log(`🔍 DEBUG LU_3.2: Input value: "${childInput?.value}"`);
+            console.log(`🔍 DEBUG LU_3.2: Parsed percent: ${childUserPercent}`);
+        }
+        
+        if (childUserPercent !== null && childUserPercent > 0) {
+            // Child has user input - use it to calculate
+            let childHa = (parentHa * childUserPercent) / 100;
+            child.calculatedStatusHa = childHa;
+            child.userPercent = childUserPercent; // Update data model
+            
+            // Debug logging for LU_3.2
+            if (child.code === "LU_3.2") {
+                console.log(`🔍 DEBUG LU_3.2: Calculation: ${parentHa.toFixed(2)} * ${childUserPercent}% = ${childHa.toFixed(2)} ha`);
+            }
+            
+            // Update display
+            updateChildDisplay(child.code, childUserPercent, childHa);
+            
+            console.log(`🎯 Cascaded to child ${child.code}: ${childUserPercent}% of ${parentHa.toFixed(2)} = ${childHa.toFixed(2)}ha`);
+            
+            // Recursively cascade to grandchildren
+            cascadeToChildrenProper(child.code);
+        } else {
+            // Child has no user input - just propagate parent's calculatedStatusHa
+            // This ensures deeply nested children get updated even without direct input
+            if (parentRow.calculatedStatusHa) {
+                console.log(`🎯 Propagating parent change to child ${child.code} (no user input)`);
+                // Recursively cascade to grandchildren to update their calculations
+                cascadeToChildrenProper(child.code);
+            }
+        }
+    });
+}
+
+function getSiblingTotal(parentCode) {
+    if (!parentCode) return 0;
+    let siblings = allRowsData.filter(r => r.parentCode === parentCode);
+    return siblings.reduce((sum, r) => sum + (r.userPercent || 0), 0);
+}
+
+function updateAllCalculations(code) {
+    let row = allRowsData.find(r => r.code === code);
+    if (!row) return;
+
+    // Update this row
+    updateRowCalculations(code);
+    
+    // Update all siblings 
+    let siblings = allRowsData.filter(r => r.parentCode === row.parentCode);
+    siblings.forEach(sibling => {
+        if (sibling.userPercent > 0) {
+            updateRowCalculations(sibling.code);
+        }
+    });
+
+    // Cascade to children
+    cascadeToChildren(code);
+}
+
+function updateRowCalculations(code) {
+    let row = allRowsData.find(r => r.code === code);
+    if (!row || !row.parentCode) return;
+
+    let parent = allRowsData.find(r => r.code === row.parentCode);
+    if (!parent) return;
+
+    console.log(`🧮 UpdateRowCalc: ${code} = ${row.userPercent}% of parent ${parent.code}`);
+
+    // Calculate new target based on user percentage
+    let effectiveParentHa = getEffectiveStatusHa(parent);
+    let newTargetHa = (effectiveParentHa * (row.userPercent || 0) / 100);
+
+    console.log(`🧮 Calc: ${effectiveParentHa.toFixed(2)}ha * ${row.userPercent || 0}% = ${newTargetHa.toFixed(2)}ha`);
+
+    // Update display
+    let targetHaCell = row.rowElement.cells[4]; // Target (ha) column  
+    let targetPercentCell = row.rowElement.cells[5]; // Target (%) column
+
+    if (row.userPercent > 0) {
+        targetHaCell.innerHTML = `<strong style="color: #007bff;" title="Calculated from ${row.userPercent}%">${formatNumber(newTargetHa)}</strong>`;
+        targetPercentCell.innerHTML = `<strong style="color: #007bff;">${row.userPercent.toFixed(1)}%</strong>`;
+    } else {
+        // Reset to original values if user cleared input
+        targetHaCell.innerHTML = row.originalTargetHa || '-';
+        targetPercentCell.innerHTML = row.originalTargetPercent || '-';
+    }
+
+    // Store calculated value for children calculations
+    row.calculatedStatusHa = newTargetHa > 0 ? newTargetHa : row.statusHa;
+}
+
+function cascadeToChildren(parentCode) {
+    console.log(`🌊 CASCADE: Checking children of ${parentCode}`);
+    
+    // FIRST: Ensure parent's own calculatedStatusHa is up-to-date
+    let parentRow = allRowsData.find(r => r.code === parentCode);
+    if (parentRow && parentRow.parentCode && parentRow.userPercent > 0) {
+        console.log(`🌊 CASCADE: First updating parent ${parentCode} calculations`);
+        updateRowCalculations(parentCode);
+    }
+    
+    let children = allRowsData.filter(r => r.parentCode === parentCode);
+    
+    if (children.length === 0) {
+        console.log(`🌊 CASCADE: ${parentCode} has no children`);
+        return;
+    }
+    
+    children.forEach(child => {
+        // Use the synced userPercent from allRowsData (more reliable than reading input)
+        let userPercent = child.userPercent;
+        
+        if (userPercent !== null && !isNaN(userPercent) && userPercent > 0) {
+            console.log(`🌊 CASCADE: Child ${child.code} has user value ${userPercent}%, updating calculations`);
+            updateRowCalculations(child.code);
+            // Recursively cascade to grandchildren
+            cascadeToChildren(child.code);
+        } else {
+            console.log(`🌊 CASCADE: Child ${child.code} has no user value (${userPercent}), skipping`);
+        }
+    });
+}
+
+function updateRemainingDisplay(parentCode, total) {
+    if (!parentCode) return;
+    
+    let remaining = Math.max(0, 100 - total);
+    let parentName = allRowsData.find(r => r.code === parentCode)?.name || parentCode;
+    
+    // Remove old remaining display
+    let oldDisplay = document.getElementById(`remaining-${parentCode}`);
+    if (oldDisplay) {
+        oldDisplay.remove();
+    }
+    
+    // Create new remaining display
+    let remainingDiv = document.createElement('div');
+    remainingDiv.id = `remaining-${parentCode}`;
+    remainingDiv.className = total > 100 ? 'alert alert-danger' : 
+                             total > 95 ? 'alert alert-warning' : 
+                             total > 0 ? 'alert alert-success' : 'alert alert-info';
+    
+    let statusIcon = total > 100 ? '🚫' : 
+                     total > 95 ? '⚠️' : 
+                     total > 0 ? '✅' : 'ℹ️';
+    
+    remainingDiv.innerHTML = `
+        <strong>${statusIcon} ${parentName} (${parentCode})</strong><br>
+        Used: ${total.toFixed(1)}% | Remaining: ${remaining.toFixed(1)}%
+        ${total > 100 ? '<br><small>⚠️ Exceeds 100% - please reduce allocations</small>' : ''}
+    `;
+    
+    // Add after the table
+    let table = document.querySelector('.table-responsive');
+    table.parentNode.insertBefore(remainingDiv, table.nextSibling);
+}
+
+function recalcGlobalAllocation() {
+    // Get all top-level categories (parent = "LU_0") 
+    let topLevel = allRowsData.filter(r => r.parentCode === "LU_0");
+    
+    // Calculate total from current user_percent values in data model
+    let total = topLevel.reduce((sum, r) => sum + (r.userPercent || 0), 0);
+    let remaining = Math.max(0, 100 - total);
+    
+    console.log(`🌍 Global Total: ${total.toFixed(1)}% | Remaining: ${remaining.toFixed(1)}%`);
+    
+    // Update or create the global allocation display
+    let globalElement = document.getElementById("global-allocation");
+    if (!globalElement) {
+        globalElement = document.createElement('div');
+        globalElement.id = 'global-allocation';
+        
+        // Add to top of page (before table)
+        let container = document.querySelector('.container-fluid');
+        let table = document.querySelector('.table-responsive');
+        container.insertBefore(globalElement, table.parentElement);
+    }
+    
+    // Update content based on total
+    if (total === 0) {
+        globalElement.innerHTML = `
+            <div class="alert alert-info">
+                <strong>🌍 GLOBAL LAND ALLOCATION</strong><br>
+                No allocations yet. 100% available for assignment.
+            </div>
+        `;
+    } else if (total > 100) {
+        globalElement.innerHTML = `
+            <div class="alert alert-danger">
+                <strong>🚫 GLOBAL TOTAL EXCEEDED!</strong><br>
+                Total: ${total.toFixed(1)}% | Over by: ${(total - 100).toFixed(1)}%<br>
+                <small>This should not happen with proper validation!</small>
+            </div>
+        `;
+    } else if (total > 95) {
+        globalElement.innerHTML = `
+            <div class="alert alert-warning">
+                <strong>⚠️ GLOBAL LAND ALLOCATION - NEARING LIMIT</strong><br>
+                Total: ${total.toFixed(1)}% | Remaining: ${remaining.toFixed(1)}%<br>
+                <small>Almost fully allocated. Only ${remaining.toFixed(1)}% left.</small>
+            </div>
+        `;
+    } else {
+        globalElement.innerHTML = `
+            <div class="alert alert-success">
+                <strong>🌍 GLOBAL LAND ALLOCATION</strong><br>
+                Total: ${total.toFixed(1)}% | Remaining: ${remaining.toFixed(1)}%<br>
+                <small>✅ ${remaining.toFixed(1)}% still available for allocation.</small>
+            </div>
+        `;
+    }
+}
+
+// Legacy function kept for compatibility
+function checkGlobalTotal() {
+    recalcGlobalAllocation();
+}
+
+function updateValuesRecursive(code, percent) {
+    let rowData = allRowsData.find(r => r.code === code);
+    if (!rowData) return;
+    
+    // Update this row's target values
+    let parentData = allRowsData.find(r => r.code === rowData.parentCode);
+    if (parentData && percent !== null && !isNaN(percent)) {
+        // Use effective parent value (could be calculated from grandparent)
+        let effectiveParentHa = getEffectiveStatusHa(parentData);
+        
+        // Calculate new Target (ha) with better precision
+        let newTargetHa = (effectiveParentHa * percent / 100);
+        
+        // Update the display
+        let targetHaCell = rowData.rowElement.cells[4]; // Target (ha) column
+        let targetPercentCell = rowData.rowElement.cells[5]; // Target (%) column
+        
+        // Format numbers with proper precision
+        let displayHa = formatNumber(newTargetHa);
+        targetHaCell.innerHTML = `<strong style="color: #007bff;" title="Calculated: ${newTargetHa.toFixed(3)} ha">${displayHa}</strong>`;
+        targetPercentCell.innerHTML = `<strong style="color: #007bff;">${percent.toFixed(1)}%</strong>`;
+        
+        // Update the row's calculated value for children calculations (cascade effect)
+        rowData.calculatedStatusHa = newTargetHa;
+        
+        // Add visual indicator for cascade updates
+        addCascadeIndicator(code);
+    }
+    
+    // Cascade to all children - recalculate them using updated parent value
+    let children = allRowsData.filter(r => r.parentCode === code);
+    children.forEach(child => {
+        if (child.userPercent !== null && !isNaN(child.userPercent)) {
+            updateValuesRecursive(child.code, child.userPercent);
+        }
+    });
+}
+
+function formatNumber(value) {
+    // Simple English format - no commas for decimals
+    if (value >= 1000) {
+        // For large numbers, show as integer with English comma separators
+        return Math.round(value).toLocaleString('en-US');
+    } else {
+        // For small numbers, show 2 decimal places with dot
+        return value.toFixed(2);
+    }
+}
+
+function getEffectiveStatusHa(rowData) {
+    // Use calculated value if available (from parent calculation), otherwise use original
+    // But if calculatedStatusHa is null, don't fallback to statusHa
+    let effective = rowData.calculatedStatusHa !== null ? rowData.calculatedStatusHa : rowData.statusHa;
+    console.log(`📐 getEffectiveStatusHa(${rowData.code}): calc=${rowData.calculatedStatusHa}, original=${rowData.statusHa}, effective=${effective.toFixed(2)}`);
+    return effective;
+}
+
+function showValidationMessage(parentCode, type, message) {
+    let existingMessage = document.getElementById(`validation-${parentCode}`);
+    let alertClass = type === 'warning' ? 'alert-warning' : 'alert-success';
+    
+    if (!existingMessage) {
+        let messageDiv = document.createElement('div');
+        messageDiv.id = `validation-${parentCode}`;
+        messageDiv.className = `alert ${alertClass} mt-2`;
+        messageDiv.innerHTML = message;
+        
+        // Add message after the table
+        let table = document.querySelector('.table-responsive');
+        table.parentNode.insertBefore(messageDiv, table.nextSibling);
+    } else {
+        existingMessage.className = `alert ${alertClass} mt-2`;
+        existingMessage.innerHTML = message;
+    }
+}
+
+function removeValidationMessage(parentCode) {
+    let existingMessage = document.getElementById(`validation-${parentCode}`);
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+}
+
+function showGlobalLandWarning(total, overBy, details) {
+    // Remove existing warning
+    removeGlobalLandWarning();
+    
+    // Create prominent global warning
+    let warningDiv = document.createElement('div');
+    warningDiv.id = 'global-land-warning';
+    warningDiv.className = 'alert alert-danger border-danger shadow-lg mt-3 mb-3';
+    warningDiv.style.cssText = `
+        border: 3px solid #dc3545 !important;
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%) !important;
+        animation: pulse-warning 2s infinite;
+        position: relative;
+        z-index: 1000;
+    `;
+    
+    warningDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <div class="me-3" style="font-size: 2.5rem;">🚨</div>
+            <div class="flex-grow-1">
+                <h4 class="alert-heading mb-2 text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    CRITICAL: Land Use Exceeds Physical Limit!
+                </h4>
+                <p class="mb-2">
+                    <strong>Total Land Allocation: ${total.toFixed(1)}%</strong><br>
+                    <span class="text-danger">Exceeds 100% limit by ${overBy.toFixed(1)}%</span>
+                </p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Current Allocations:</h6>
+                        <ul class="mb-0">
+                            ${details.map(detail => `<li>${detail}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-danger">⚠️ Physical Constraint:</h6>
+                        <p class="mb-0">Germany's total land area cannot exceed 100%. Please reduce allocations to create a realistic scenario.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Insert at the top of the main content
+    let container = document.querySelector('.container-fluid');
+    let firstChild = container.firstElementChild;
+    container.insertBefore(warningDiv, firstChild);
+    
+    // Scroll to warning
+    warningDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function removeGlobalLandWarning() {
+    let existingWarning = document.getElementById('global-land-warning');
+    if (existingWarning) {
+        existingWarning.remove();
+    }
+}
+
+// Helper function to add cascading indicator
+function addCascadeIndicator(code) {
+    let rowData = allRowsData.find(r => r.code === code);
+    if (rowData) {
+        let nameCell = rowData.rowElement.cells[1];
+        if (!nameCell.querySelector('.cascade-indicator')) {
+            let indicator = document.createElement('span');
+            indicator.className = 'cascade-indicator badge bg-info ms-2';
+            indicator.innerHTML = '🔄 Updated';
+            nameCell.appendChild(indicator);
+            
+            // Remove indicator after 2 seconds
+            setTimeout(() => {
+                if (indicator.parentNode) {
+                    indicator.remove();
+                }
+            }, 2000);
+        }
+    }
+}
+
+// Debounce timer for auto-save
+let autoSaveTimers = {};
+
+// PROPER BACKEND CASCADE API
+function updateUserPercentAPI(code, value) {
+    console.log(`🚀 API: Updating ${code} = ${value}%`);
+    
+    // Get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Call backend API
+    fetch(`/api/update/${code}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `user_percent=${value}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log(`✅ ${data.message}`);
+            // Reload page to show all cascaded changes
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        } else {
+            console.error(`❌ Error: ${data.error}`);
+            alert(`Error updating ${code}: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        console.error('API Error:', error);
+        alert(`Network error updating ${code}`);
+    });
+}
+
+// Auto-save function with debouncing to avoid too many requests
+function autoSaveValue(code, percent) {
+    // Clear existing timer for this code
+    if (autoSaveTimers[code]) {
+        clearTimeout(autoSaveTimers[code]);
+    }
+    
+    // Set new timer to save after 1 second of no changes
+    autoSaveTimers[code] = setTimeout(() => {
+        console.log(`💾 Auto-saving ${code}: ${percent}%`);
+        saveUserPercent(code, percent).catch(error => {
+            console.error(`Auto-save failed for ${code}:`, error);
+            // Show a subtle notification for auto-save failures
+            showSaveMessage(`⚠️ Auto-save failed for ${code}. Use "Save All" button.`, 'warning');
+        });
+    }, 1000); // Wait 1 second after user stops typing
+}
+
+// Function to save individual user percentage to database
+function saveUserPercent(code, percent) {
+    return fetch('/api/update-user-percent/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            code: code,
+            user_percent: percent
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log(`✅ Saved ${code}: ${percent}%`);
+            return data;
+        } else {
+            console.error(`❌ Failed to save ${code}:`, data.error);
+            throw new Error(data.error);
+        }
+    })
+    .catch(error => {
+        console.error(`❌ Error saving ${code}:`, error);
+        throw error;
+    });
+}
+
+// Function to save all current user inputs at once
+function saveAllUserInputs() {
+    let saveButton = document.getElementById('save-all-button');
+    if (saveButton) {
+        saveButton.disabled = true;
+        saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+    }
+    
+    // Collect all current user inputs
+    let userInputs = {};
+    let hasInputs = false;
+    
+    document.querySelectorAll('.user-percent-input').forEach(input => {
+        let code = input.dataset.code;
+        let value = input.value.trim();
+        userInputs[code] = value;
+        if (value !== '') {
+            hasInputs = true;
+        }
+    });
+    
+    if (!hasInputs) {
+        showSaveMessage('No values to save', 'warning');
+        if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.innerHTML = '<i class="fas fa-save me-2"></i>Save All Values';
+        }
+        return;
+    }
+    
+    fetch('/api/save-all-inputs/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            user_inputs: userInputs
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSaveMessage(`✅ Successfully saved ${data.saved_count} values!`, 'success');
+            if (data.errors && data.errors.length > 0) {
+                showSaveMessage(`⚠️ Some errors: ${data.errors.join(', ')}`, 'warning');
+            }
+        } else {
+            showSaveMessage(`❌ Failed to save: ${data.error}`, 'danger');
+        }
+    })
+    .catch(error => {
+        showSaveMessage(`❌ Error saving values: ${error.message}`, 'danger');
+        console.error('Save error:', error);
+    })
+    .finally(() => {
+        if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.innerHTML = '<i class="fas fa-save me-2"></i>Save All Values';
+        }
+    });
+}
+
+// Helper function to get CSRF token
+function getCsrfToken() {
+    let csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfToken) {
+        return csrfToken.value;
+    }
+    
+    // Fallback: try to get from cookies
+    let cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        let [name, value] = cookie.trim().split('=');
+        if (name === 'csrftoken') {
+            return value;
+        }
+    }
+    
+    console.warn('CSRF token not found');
+    return '';
+}
+
+// Helper function to show save messages
+function showSaveMessage(message, type = 'info') {
+    // Remove existing message
+    let existingMessage = document.getElementById('save-message');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+    
+    // Create new message
+    let messageDiv = document.createElement('div');
+    messageDiv.id = 'save-message';
+    messageDiv.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+    messageDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Insert after the global allocation display
+    let globalAllocation = document.getElementById('global-allocation');
+    if (globalAllocation) {
+        globalAllocation.parentNode.insertBefore(messageDiv, globalAllocation.nextSibling);
+    } else {
+        // Fallback: insert at top of container
+        let container = document.querySelector('.container-fluid');
+        container.insertBefore(messageDiv, container.firstChild);
+    }
+    
+    // Auto-dismiss success messages after 3 seconds
+    if (type === 'success') {
+        setTimeout(() => {
+            if (messageDiv) {
+                messageDiv.remove();
+            }
+        }, 3000);
+    }
+}
+
+// Helper function to show a simple "saved" message (for backend saves)
+function showMessage(message, type = 'info') {
+    // Create a toast-style message in the top-right corner
+    let toast = document.createElement('div');
+    toast.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
+    toast.style.cssText = 'z-index: 9999; min-width: 200px; animation: slideIn 0.3s ease-out;';
+    toast.innerHTML = message;
+    
+    document.body.appendChild(toast);
+    
+    // Auto-remove after 2 seconds
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
+}
+
+function getCsrfToken() {
+    if (CSRF_TOKEN && CSRF_TOKEN.length > 10) {
+        return CSRF_TOKEN;
+    }
+    const match = document.cookie.match(/csrftoken=([^;]+)/);
+    if (match) return match[1];
+    const inputToken = document.querySelector('input[name=csrfmiddlewaretoken]');
+    return inputToken ? inputToken.value : '';
+}
+
+/**
+ * Update land use percentage for a specific record (saves to backend)
+ * Frontend display is already updated by validateAll() - this just persists to database
+ * @param {number} pk - Primary key of the LandUse record
+ */
+function updateLandUsePercent(pk) {
+    const userPercent = document.getElementById(`user_percent_${pk}`).value;
+
+    fetch(`/landuse/${pk}/update_percent/`, {
+        method: "POST",
+        headers: { 
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCsrfToken()
+        },
+        body: JSON.stringify({ user_percent: userPercent })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "ok") {
+            // Frontend already updated display - just log success
+            console.log(`✅ Saved to database: ${data.message}`);
+            
+            // Optionally show a subtle success indicator (commented out to avoid spam)
+            // showMessage('Saved', 'success');
+        } else if (data.status === "error") {
+            console.error(`❌ Save failed: ${data.message}`);
+            showMessage('Save failed: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving to database:', error);
+        showMessage('Failed to save. Please try again.', 'danger');
+    });
+}
+
+async function runFullRecalc() {
+    const btn = document.getElementById('run-recalc-btn');
+    const originalLabel = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Calculating...';
+
+    try {
+        const response = await fetch("{% url 'simulator:run_full_recalc' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCsrfToken()
+            },
+            body: JSON.stringify({})
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        showMessage(`Recalculated in ${data.duration_ms} ms`, 'success');
+        // Redirect to Renewable page (Page 2) with run id
+        window.location.href = "{% url 'simulator:renewable_list' %}?run_id=" + data.run_id;
+    } catch (err) {
+        console.error('Recalc failed', err);
+        showMessage('Recalculation failed. Please try again.', 'danger');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalLabel;
+    }
+}
+</script>
+
+        </main>
+    </div>
+</div>
+
+<style>
+.sidebar {
+    position: fixed;
+    top: 56px; /* Height of navbar */
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    padding: 48px 0 0;
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+}
+
+.sidebar .nav-link {
+    font-weight: 500;
+    color: #333;
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    margin: 0.125rem 0.5rem;
+}
+
+.sidebar .nav-link:hover {
+    background-color: rgba(0, 0, 0, .075);
+}
+
+.sidebar .nav-link.active {
+    color: #0d6efd;
+    background-color: rgba(13, 110, 253, .1);
+}
+
+.sidebar .sidebar-heading {
+    font-size: .75rem;
+    text-transform: uppercase;
+}
+
+main {
+    margin-left: 0;
+}
+
+@media (min-width: 768px) {
+    main {
+        margin-left: 16.66667%;
+    }
+}
+
+@media (min-width: 992px) {
+    main {
+        margin-left: 16.66667%;
+    }
+}
+
+.user-percent-input {
+    transition: all 0.3s ease;
+}
+
+.user-percent-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.cascade-indicator {
+    animation: pulse 1s ease-in-out;
+}
+
+@keyframes pulse {
+    0% { opacity: 0; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.alert {
+    border-left: 4px solid;
+    border-radius: 8px;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+.alert-warning {
+    border-left-color: #ffc107;
+}
+
+.alert-success {
+    border-left-color: #28a745;
+}
+
+.alert-danger {
+    border-left-color: #dc3545;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.alert-info {
+    border-left-color: #17a2b8;
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+.user-percent-input.is-invalid {
+    animation: shake 0.5s ease-in-out;
+}
+
+.user-percent-input.error {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+    animation: shake 0.5s ease-in-out;
+}
+
+.user-percent-input.warning {
+    border-color: #ffc107 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25) !important;
+    background-color: #fff3cd !important;
+}
+
+.user-percent-input.global-warning {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.3rem rgba(220, 53, 69, 0.4) !important;
+    background-color: #f8d7da !important;
+    animation: pulse-border 1.5s infinite;
+}
+
+@keyframes pulse-warning {
+    0%, 100% { 
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+    }
+    50% { 
+        transform: scale(1.02);
+        box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+    }
+}
+
+@keyframes pulse-border {
+    0%, 100% { 
+        border-width: 2px;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+    50% { 
+        border-width: 3px;
+        box-shadow: 0 0 0 0.4rem rgba(220, 53, 69, 0.4);
+    }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+</style>
+
+{% endblock %}

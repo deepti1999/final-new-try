@@ -1,0 +1,261 @@
+{"timestamp": "2025-12-10T23:43:17.818540Z", "level": "info", "component": "django.utils.autoreload", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/utils/autoreload.py", "line": 667, "function": "run_with_reloader", "message": "Watching for file changes with StatReloader", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:43:35.159731Z", "level": "info", "component": "django.server", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/core/servers/basehttp.py", "line": 212, "function": "log_message", "message": "\"HEAD / HTTP/1.1\" 200 0", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:45:28.877845Z", "level": "info", "component": "django.server", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/core/servers/basehttp.py", "line": 212, "function": "log_message", "message": "\"GET / HTTP/1.1\" 200 13109", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:45:29.086279Z", "level": "warning", "component": "django.request", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/utils/log.py", "line": 246, "function": "log_response", "message": "Not Found: /favicon.ico", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:45:29.086457Z", "level": "warning", "component": "django.request", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/utils/log.py", "line": 246, "function": "log_response", "message": "Not Found: /apple-touch-icon.png", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:45:29.086622Z", "level": "warning", "component": "django.request", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/utils/log.py", "line": 246, "function": "log_response", "message": "Not Found: /apple-touch-icon-precomposed.png", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:45:29.086675Z", "level": "warning", "component": "django.request", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/utils/log.py", "line": 246, "function": "log_response", "message": "Not Found: /favicon.ico", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:45:29.086963Z", "level": "warning", "component": "django.server", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/core/servers/basehttp.py", "line": 212, "function": "log_message", "message": "\"GET /favicon.ico HTTP/1.1\" 404 5968", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:45:29.087060Z", "level": "warning", "component": "django.server", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/core/servers/basehttp.py", "line": 212, "function": "log_message", "message": "\"GET /apple-touch-icon.png HTTP/1.1\" 404 5995", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:45:29.087108Z", "level": "warning", "component": "django.server", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/core/servers/basehttp.py", "line": 212, "function": "log_message", "message": "\"GET /favicon.ico HTTP/1.1\" 404 5968", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:45:29.087152Z", "level": "warning", "component": "django.server", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/core/servers/basehttp.py", "line": 212, "function": "log_message", "message": "\"GET /apple-touch-icon-precomposed.png HTTP/1.1\" 404 6031", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:45:29.117623Z", "level": "info", "component": "django.server", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/core/servers/basehttp.py", "line": 212, "function": "log_message", "message": "\"GET / HTTP/1.1\" 200 13109", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:45:30.561583Z", "level": "info", "component": "django.server", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/core/servers/basehttp.py", "line": 212, "function": "log_message", "message": "\"GET /simulation/ HTTP/1.1\" 200 15942", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:45:32.225743Z", "level": "info", "component": "django.server", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/core/servers/basehttp.py", "line": 212, "function": "log_message", "message": "\"GET /annual-electricity/ HTTP/1.1\" 200 28956", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:45:43.335280Z", "level": "info", "component": "django.server", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/core/servers/basehttp.py", "line": 212, "function": "log_message", "message": "\"POST /api/ws/balance/ HTTP/1.1\" 200 335", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:45:49.967151Z", "level": "info", "component": "django.server", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/core/servers/basehttp.py", "line": 212, "function": "log_message", "message": "\"GET /bilanz/ HTTP/1.1\" 200 41174", "eventType": "other", "context": {}, "stack": null}
+Performing system checks...
+
+System check identified no issues (0 silenced).
+December 10, 2025 - 23:43:26
+Django version 4.2.24, using settings 'landuse_project.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CONTROL-C.
+
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.3.1.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.3.2.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.4.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.5.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.4 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.5 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6 changed; full recalculation is manual now.
+✅ Manual target_ha change detected for LU_2.1: 706948.85 ha → 3.98%
+ℹ️ RenewableData 1.2.1.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 1.2.1.2.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.1.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.4.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.4 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.5.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.5 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.4.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.4 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.5.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.5 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.4.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.5.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.4.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.4 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.5.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.5 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.4.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.5.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 1.2 changed; full recalculation is manual now.
+✅ Manual target_ha change detected for LU_2.1: 666694.77 ha → 3.75%
+ℹ️ RenewableData 1.2.1.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 1.2.1.2.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.1.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4 changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.4.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.4 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.5.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.5 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 3. changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.6 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 4. changed; full recalculation is manual now.
+ℹ️ RenewableData 9.4.3.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.2.2 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3.1 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.3 changed; full recalculation is manual now.
+ℹ️ RenewableData 10.1 changed; full recalculation is manual now.
+{"timestamp": "2025-12-10T23:46:03.057295Z", "level": "info", "component": "django.server", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/core/servers/basehttp.py", "line": 212, "function": "log_message", "message": "\"POST /api/balance-energy/ HTTP/1.1\" 200 248", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:46:04.706037Z", "level": "info", "component": "django.server", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/core/servers/basehttp.py", "line": 212, "function": "log_message", "message": "\"GET /bilanz/ HTTP/1.1\" 200 41174", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:47:47.019289Z", "level": "info", "component": "django.server", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/core/servers/basehttp.py", "line": 212, "function": "log_message", "message": "\"HEAD / HTTP/1.1\" 200 0", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:47:49.681514Z", "level": "info", "component": "django.server", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/core/servers/basehttp.py", "line": 212, "function": "log_message", "message": "\"HEAD /login/ HTTP/1.1\" 200 0", "eventType": "other", "context": {}, "stack": null}
+{"timestamp": "2025-12-10T23:47:52.158619Z", "level": "info", "component": "django.server", "file": "/Users/deeptimaheedharan/Desktop/final check kiran /check kiran/check kiran/.venv/lib/python3.9/site-packages/django/core/servers/basehttp.py", "line": 212, "function": "log_message", "message": "\"HEAD /simulation/ HTTP/1.1\" 302 0", "eventType": "other", "context": {}, "stack": null}
