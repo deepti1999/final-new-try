@@ -1,16 +1,19 @@
 """
-Renewable Energy Calculator - ALL FORMULAS IN ONE PLACE
-=======================================================
+Renewable Energy Calculator - Database-Driven Formulas
+======================================================
 
-This is the SINGLE SOURCE OF TRUTH for all renewable energy formulas.
-All formulas are stored here, NOT in the database or models.py.
+UPDATED: Now loads formulas from database via FormulaService.
+Falls back to Python files for backward compatibility.
 
-Total formulas: 217
-Fixed values: 91
-Calculated formulas: 125
+This provides:
+- Editable formulas via Django Admin
+- Real-time formula updates without code changes
+- Versioning and validation
+- Backward compatibility
 """
 
 from .formula_evaluator import FormulaEvaluator
+from simulator.formula_service import FormulaService
 
 
 # ALL RENEWABLE ENERGY FORMULAS
@@ -1099,10 +1102,14 @@ RENEWABLE_FORMULAS = {
 
 
 class RenewableCalculator:
-    """Calculator for renewable energy values"""
+    """
+    Calculator for renewable energy values.
+    Now uses FormulaService to load formulas from database.
+    """
     
     def __init__(self):
         self.evaluator = FormulaEvaluator()
+        self.formula_service = FormulaService(use_cache=True)
         self.cache = {}
     
     def set_data_sources(self, landuse_data, verbrauch_data, renewable_data):
@@ -1149,6 +1156,7 @@ class RenewableCalculator:
     def calculate(self, code):
         """
         Calculate status and target values for a renewable energy item.
+        Now loads formula from database via FormulaService.
         
         Args:
             code: The renewable energy code
@@ -1156,16 +1164,23 @@ class RenewableCalculator:
         Returns:
             tuple: (status_value, target_value) or (None, None) if fixed or error
         """
-        if code not in RENEWABLE_FORMULAS:
-            return None, None
+        # Get formula from database first, fallback to Python file
+        formula_def = self.formula_service.get_formula(code, category='renewable')
         
-        formula_data = RENEWABLE_FORMULAS[code]
+        if not formula_def:
+            # Try legacy RENEWABLE_FORMULAS dict for backward compatibility
+            if code not in RENEWABLE_FORMULAS:
+                return None, None
+            formula_def = {
+                'expression': RENEWABLE_FORMULAS[code]['formula'],
+                'is_fixed': RENEWABLE_FORMULAS[code]['is_fixed'],
+            }
         
         # If fixed value, return None (use database values)
-        if formula_data['is_fixed']:
+        if formula_def.get('is_fixed'):
             return None, None
         
-        formula = formula_data['formula']
+        formula = formula_def.get('expression')
         if not formula:
             return None, None
         
@@ -1218,13 +1233,29 @@ class RenewableCalculator:
         return (status, target)
     
     def get_formula(self, code):
-        """Get the formula for a code"""
+        """
+        Get the formula for a code.
+        Loads from database first, then Python files.
+        """
+        formula_def = self.formula_service.get_formula(code, category='renewable')
+        if formula_def:
+            return formula_def.get('expression')
+        
+        # Fallback to legacy dict
         if code in RENEWABLE_FORMULAS:
             return RENEWABLE_FORMULAS[code]['formula']
         return None
     
     def is_fixed(self, code):
-        """Check if a code is a fixed value"""
+        """
+        Check if a code is a fixed value.
+        Loads from database first, then Python files.
+        """
+        formula_def = self.formula_service.get_formula(code, category='renewable')
+        if formula_def:
+            return formula_def.get('is_fixed', True)
+        
+        # Fallback to legacy dict
         if code in RENEWABLE_FORMULAS:
             return RENEWABLE_FORMULAS[code]['is_fixed']
         return True
