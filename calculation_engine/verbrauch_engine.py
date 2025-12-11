@@ -61,8 +61,11 @@ class VerbrauchCalculator:
         
         # Add LandUse if provided
         if landuse_data:
+            # Strip LU_ prefix from codes since formulas use numeric codes (e.g., "1.1" not "LU_1.1")
             for code, data in landuse_data.items():
-                landuse_key = f'LandUse_{code}'
+                # Convert LU_1.1 -> 1.1, LU_2.1 -> 2.1, etc.
+                clean_code = code.replace('LU_', '') if code.startswith('LU_') else code
+                landuse_key = f'LandUse_{clean_code}'
                 if data.get('status_ha') is not None:
                     status_lookup[landuse_key] = float(data['status_ha'])
                 if data.get('target_ha') is not None:
