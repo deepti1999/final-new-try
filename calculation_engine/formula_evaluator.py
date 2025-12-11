@@ -58,9 +58,11 @@ class FormulaEvaluator:
         # This prevents "1.4" in "VerbrauchData_1.4" from being replaced prematurely
         
         # Handle VerbrauchData_ references
+        # CRITICAL: Sort by length DESC to replace longest codes first
         verbrauchdata_pattern = r'VerbrauchData_(\d+(?:\.\d+)*)'
         verbrauchdata_matches = re.findall(verbrauchdata_pattern, expression)
-        for code in verbrauchdata_matches:
+        verbrauchdata_matches_sorted = sorted(set(verbrauchdata_matches), key=len, reverse=True)
+        for code in verbrauchdata_matches_sorted:
             full_key = f'VerbrauchData_{code}'
             if full_key in data_lookup:
                 value = data_lookup[full_key]
@@ -69,9 +71,11 @@ class FormulaEvaluator:
                 return None  # Code not found
         
         # Handle Verbrauch_ references
+        # CRITICAL: Sort by length DESC to replace longest codes first (prevents partial overlap)
         verbrauch_pattern = r'Verbrauch_(\d+(?:\.\d+)*)'
         verbrauch_matches = re.findall(verbrauch_pattern, expression)
-        for code in verbrauch_matches:
+        verbrauch_matches_sorted = sorted(set(verbrauch_matches), key=len, reverse=True)
+        for code in verbrauch_matches_sorted:
             full_key = f'Verbrauch_{code}'
             if full_key in data_lookup:
                 value = data_lookup[full_key]
@@ -80,9 +84,11 @@ class FormulaEvaluator:
                 return None
         
         # Handle Renewable_ references
+        # CRITICAL: Sort by length DESC to replace longest codes first
         renewable_pattern = r'Renewable_(\d+(?:\.\d+)*)'
         renewable_matches = re.findall(renewable_pattern, expression)
-        for code in renewable_matches:
+        renewable_matches_sorted = sorted(set(renewable_matches), key=len, reverse=True)
+        for code in renewable_matches_sorted:
             full_key = f'Renewable_{code}'
             if full_key in data_lookup:
                 value = data_lookup[full_key]
@@ -91,9 +97,11 @@ class FormulaEvaluator:
                 return None
         
         # Handle LandUse_ references
+        # CRITICAL: Sort by length DESC to replace longest codes first
         landuse_pattern = r'LandUse_([A-Za-z0-9_.]+)'
         landuse_matches = re.findall(landuse_pattern, expression)
-        for code in landuse_matches:
+        landuse_matches_sorted = sorted(set(landuse_matches), key=len, reverse=True)
+        for code in landuse_matches_sorted:
             full_key = f'LandUse_{code}'
             if full_key in data_lookup:
                 value = data_lookup[full_key]

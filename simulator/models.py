@@ -1027,15 +1027,94 @@ class VerbrauchData(models.Model):
         return self.ziel
     
     # =============================================================================
-    # VERBRAUCH CALCULATION SOURCE: simulator/verbrauch_calculations.py
+    # VERBRAUCH CALCULATION SOURCE: calculation_engine/verbrauch_engine.py
     # =============================================================================
-    # ALL VerbrauchData calculations MUST use this file (170 formulas, 2,589 lines)
-    # DO NOT use verbrauch_formulas.py or calculate_verbrauch_values.py
-    # This is the ONLY authoritative calculation engine for VerbrauchData
+    # NOW USES DATABASE-DRIVEN FORMULAS via FormulaService
+    # Formulas stored in Formula model, editable via Admin UI
+    # Falls back to verbrauch_calculations.py if no DB formula found
     # =============================================================================
-    from .verbrauch_calculations import calculate_value_method, calculate_ziel_value_method
-    calculate_value = calculate_value_method
-    calculate_ziel_value = calculate_ziel_value_method
+    
+    def calculate_value(self):
+        """Calculate STATUS value using calculation_engine.VerbrauchCalculator (database-driven)"""
+        try:
+            import sys
+            import os
+            sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from calculation_engine.verbrauch_engine import VerbrauchCalculator
+            
+            # Initialize calculator
+            calculator = VerbrauchCalculator()
+            
+            # Load all data sources
+            verbrauch_data = {
+                i.code: {'status': i.status or 0, 'ziel': i.ziel or 0}
+                for i in VerbrauchData.objects.all()
+            }
+            renewable_data = {
+                i.code: {'status_value': i.status_value or 0, 'target_value': i.target_value or 0}
+                for i in RenewableData.objects.all()
+            }
+            landuse_data = {
+                i.code: {'status_ha': i.status_ha or 0, 'target_ha': i.target_ha or 0}
+                for i in LandUse.objects.all()
+            }
+            
+            calculator.set_data_sources(verbrauch_data, renewable_data, landuse_data)
+            
+            # Calculate status value
+            status_value, _ = calculator.calculate(self.code)
+            return status_value
+            
+        except Exception as e:
+            print(f"Warning: calculation_engine failed for {self.code}, trying fallback: {e}")
+            # Fallback to old hardcoded calculations if engine fails
+            try:
+                from .verbrauch_calculations import calculate_value_method
+                return calculate_value_method(self)
+            except Exception as e2:
+                print(f"Error: Both calculation methods failed for {self.code}: {e2}")
+                return None
+    
+    def calculate_ziel_value(self):
+        """Calculate ZIEL value using calculation_engine.VerbrauchCalculator (database-driven)"""
+        try:
+            import sys
+            import os
+            sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from calculation_engine.verbrauch_engine import VerbrauchCalculator
+            
+            # Initialize calculator
+            calculator = VerbrauchCalculator()
+            
+            # Load all data sources
+            verbrauch_data = {
+                i.code: {'status': i.status or 0, 'ziel': i.ziel or 0}
+                for i in VerbrauchData.objects.all()
+            }
+            renewable_data = {
+                i.code: {'status_value': i.status_value or 0, 'target_value': i.target_value or 0}
+                for i in RenewableData.objects.all()
+            }
+            landuse_data = {
+                i.code: {'status_ha': i.status_ha or 0, 'target_ha': i.target_ha or 0}
+                for i in LandUse.objects.all()
+            }
+            
+            calculator.set_data_sources(verbrauch_data, renewable_data, landuse_data)
+            
+            # Calculate ziel value
+            _, ziel_value = calculator.calculate(self.code)
+            return ziel_value
+            
+        except Exception as e:
+            print(f"Warning: calculation_engine failed for {self.code}, trying fallback: {e}")
+            # Fallback to old hardcoded calculations if engine fails
+            try:
+                from .verbrauch_calculations import calculate_ziel_value_method
+                return calculate_ziel_value_method(self)
+            except Exception as e2:
+                print(f"Error: Both calculation methods failed for {self.code}: {e2}")
+                return None
 
 
 class GebaeudewaermeData(models.Model):

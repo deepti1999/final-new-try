@@ -79,13 +79,16 @@ class VerbrauchCalculator:
         Now loads formula from database via FormulaService.
         
         Args:
-            code: The verbrauch code (e.g., 'V_1.2.1')
+            code: The verbrauch code (e.g., '1.2.1' or 'V_1.2.1')
             
         Returns:
             tuple: (status, ziel) values or (None, None) if fixed or error
         """
+        # Normalize code - add V_ prefix if not present for database lookup
+        lookup_code = f'V_{code}' if not code.startswith('V_') else code
+        
         # Get formula from database first
-        formula_def = self.formula_service.get_formula(code, category='verbrauch')
+        formula_def = self.formula_service.get_formula(lookup_code, category='verbrauch')
         
         if not formula_def:
             # No formula in database
