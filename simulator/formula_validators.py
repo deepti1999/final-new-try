@@ -151,11 +151,22 @@ class FormulaValidator:
                     self.info.append(f"✓ RenewableData reference valid: {lookup_code}")
                     
             else:
-                # Standalone code - assume RenewableData
-                if not RenewableData.objects.filter(code=code).exists():
-                    self.warnings.append(f"Code not found in RenewableData: {code}")
+                # Standalone code - check based on formula category
+                if category == 'verbrauch':
+                    # For Verbrauch formulas, check VerbrauchData
+                    if not VerbrauchData.objects.filter(code=code).exists():
+                        self.warnings.append(f"VerbrauchData code not found: {code}")
+                    else:
+                        self.info.append(f"✓ VerbrauchData reference valid: {code}")
+                elif category == 'renewable':
+                    # For Renewable formulas, check RenewableData
+                    if not RenewableData.objects.filter(code=code).exists():
+                        self.warnings.append(f"RenewableData code not found: {code}")
+                    else:
+                        self.info.append(f"✓ RenewableData reference valid: {code}")
                 else:
-                    self.info.append(f"✓ Code reference valid: {code}")
+                    # For other categories, just note the reference
+                    self.info.append(f"→ Code reference: {code} (category: {category})")
     
     def _check_circular_dependency(self, formula_key: str, referenced_codes: List[str]) -> bool:
         """
