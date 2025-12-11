@@ -7,6 +7,156 @@ from typing import Optional
 # Import WS Data model
 from .ws_models import WSData
 
+
+class Formula(models.Model):
+    """
+    Stores a formula expression identified by a unique key.
+    The expression is evaluated with variables supplied via FormulaVariable rows.
+    
+    EXTENSIBLE FORMULA SYSTEM:
+    - Formulas stored in database, editable via Admin UI
+    - Version control for audit trail
+    - Active/inactive status for testing
+    - Category organization for renewable, verbrauch, landuse, etc.
+    """
+
+    key = models.CharField(max_length=50, unique=True, help_text="Unique identifier (e.g., '1.1.2.1.2')")
+    expression = models.TextField(help_text="Formula expression (e.g., 'LandUse_1.1 * 1.1.2.1 / 100')")
+    description = models.TextField(blank=True, help_text="Human-readable description of what this formula calculates")
+    
+    # Enhanced fields for extensibility
+    category = models.CharField(
+        max_length=50, 
+        default='renewable',
+        choices=[
+            ('renewable', 'Renewable Energy'),
+            ('verbrauch', 'Energy Consumption'),
+            ('landuse', 'Land Use'),
+            ('bilanz', 'Energy Balance'),
+            ('other', 'Other'),
+        ],
+        help_text="Category for organizing formulas"
+    )
+    is_active = models.BooleanField(
+        default=True, 
+        help_text="Inactive formulas are ignored by calculation engine"
+    )
+    version = models.IntegerField(
+        default=1, 
+        help_text="Version number for tracking changes"
+    )
+    is_fixed = models.BooleanField(
+        default=False,
+        help_text="True if this represents a fixed value, False if calculated"
+    )
+    
+    # Metadata
+    notes = models.TextField(blank=True, help_text="Internal notes for developers")
+    last_validated = models.DateTimeField(null=True, blank=True, help_text="Last time formula was validated")
+    validation_status = models.CharField(
+        max_length=20,
+        default='pending',
+        choices=[
+            ('pending', 'Pending Validation'),
+            ('valid', 'Valid'),
+            ('invalid', 'Invalid'),
+            ('warning', 'Valid with Warnings'),
+        ]
+    )
+    validation_message = models.TextField(blank=True, help_text="Result of last validation check")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["category", "key"]
+        verbose_name = "Formula"
+        verbose_name_plural = "Formulas"
+        indexes = [
+            models.Index(fields=['category', 'is_active']),
+            models.Index(fields=['key']),
+        ]
+
+    def __str__(self):
+        status = "✓" if self.is_active else "✗"
+        return f"{status} {self.key} - {self.category}"
+    
+    def increment_version(self):
+        """Increment version number when formula is updated"""
+        self.version += 1
+        self.save(update_fields=['version', 'updated_at'])
+
+
+class FormulaVariable(models.Model):
+    """
+    Maps a variable name used inside a formula to an actual data source.
+    Example: variable_name="wind_area" -> LandUse target_ha for code "LU_2.1".
+    
+    ENHANCED VARIABLE SYSTEM:
+    - Support for multiple data sources
+    - Default values for missing data
+    - Transformation functions (future: e.g., scale, round)
+    """
+
+    LANDUSE_STATUS = "landuse_status"
+    LANDUSE_TARGET = "landuse_target"
+    RENEWABLE_STATUS = "renewable_status"
+    RENEWABLE_TARGET = "renewable_target"
+    VERBRAUCH_STATUS = "verbrauch_status"
+    VERBRAUCH_ZIEL = "verbrauch_ziel"
+    LITERAL = "literal"
+
+    SOURCE_CHOICES = [
+        (LANDUSE_STATUS, "LandUse status_ha"),
+        (LANDUSE_TARGET, "LandUse target_ha"),
+        (RENEWABLE_STATUS, "RenewableData status_value"),
+        (RENEWABLE_TARGET, "RenewableData target_value"),
+        (VERBRAUCH_STATUS, "VerbrauchData status"),
+        (VERBRAUCH_ZIEL, "VerbrauchData ziel"),
+        (LITERAL, "Literal number"),
+    ]
+
+    formula = models.ForeignKey(
+        Formula, on_delete=models.CASCADE, related_name="variables"
+    )
+    variable_name = models.CharField(
+        max_length=50,
+        help_text="Variable name used in formula expression"
+    )
+    source_type = models.CharField(
+        max_length=30, 
+        choices=SOURCE_CHOICES,
+        help_text="Type of data source"
+    )
+    source_key = models.CharField(
+        max_length=100,
+        help_text="Code or value used to resolve the data (e.g., LU_2.1, 1.4, or literal).",
+    )
+    default_value = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Fallback if the source cannot be resolved.",
+    )
+    
+    # Enhanced fields
+    is_required = models.BooleanField(
+        default=True,
+        help_text="If True, formula fails if this variable cannot be resolved"
+    )
+    notes = models.TextField(
+        blank=True,
+        help_text="Notes about this variable"
+    )
+
+    class Meta:
+        unique_together = ("formula", "variable_name")
+        ordering = ["formula__key", "variable_name"]
+        verbose_name = "Formula Variable"
+        verbose_name_plural = "Formula Variables"
+
+    def __str__(self):
+        return f"{self.formula.key}:{self.variable_name} → {self.source_type}"
+
 class LandUse(models.Model):
     code = models.CharField(max_length=20)  # e.g. "2.2.1"
     name = models.CharField(max_length=255)  # Clean name from CSV
@@ -14,6 +164,14 @@ class LandUse(models.Model):
     # Store hectare values from CSV
     status_ha = models.FloatField(null=True, blank=True)       # Status_ha from CSV
     target_ha = models.FloatField(null=True, blank=True)       # Target_ha from CSV
+
+    # Optional formula keys for dynamic calculation (DB-driven)
+    status_formula_key = models.CharField(
+        max_length=50, null=True, blank=True, help_text="Formula key to calculate status_ha"
+    )
+    target_formula_key = models.CharField(
+        max_length=50, null=True, blank=True, help_text="Formula key to calculate target_ha"
+    )
     
     # User input for custom percentage calculations
     user_percent = models.FloatField(null=True, blank=True, help_text="User-defined percentage for target calculations")
@@ -53,6 +211,9 @@ class LandUse(models.Model):
                 old_target_ha = old_obj.target_ha
             except LandUse.DoesNotExist:
                 pass
+
+        # Apply DB-driven formulas before any cascading logic (optional, non-hardcoded path)
+        self._apply_formula_overrides(force_recalc=force_recalc)
         
         # AUTO-ASSIGN PARENT if missing but code indicates a parent relationship
         # Example: LU_1.1 → parent = LU_1, LU_1.2.3 → parent = LU_1.2
@@ -108,6 +269,30 @@ class LandUse(models.Model):
             # Cascade to children - but only if user_percent changed, not if target_ha manually edited
             if target_ha_changed and not target_ha_manually_changed:
                 self._cascade_to_children()
+
+    def _apply_formula_overrides(self, force_recalc=False):
+        """
+        Optionally calculate status_ha/target_ha from DB-stored formulas instead of hardcoded logic.
+        This keeps land use calculations configurable without code edits.
+        """
+        if not self.status_formula_key and not self.target_formula_key:
+            return
+
+        try:
+            from simulator.formula_service import evaluate_formula_by_key
+        except Exception as exc:  # pragma: no cover - defensive guard
+            print(f"❌ Unable to import formula service: {exc}")
+            return
+
+        if self.status_formula_key:
+            status_val = evaluate_formula_by_key(self.status_formula_key)
+            if status_val is not None:
+                self.status_ha = status_val
+
+        if self.target_formula_key and (force_recalc or not self.target_locked):
+            target_val = evaluate_formula_by_key(self.target_formula_key)
+            if target_val is not None:
+                self.target_ha = target_val
     
     def _recalculate_renewable_dependents(self):
         """

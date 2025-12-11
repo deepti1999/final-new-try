@@ -1,7 +1,14 @@
 from django.contrib import admin
 from django.contrib.admin import SimpleListFilter
 from django.utils.html import format_html
-from .models import LandUse, RenewableData, VerbrauchData, WSData
+from .models import (
+    Formula,
+    FormulaVariable,
+    LandUse,
+    RenewableData,
+    VerbrauchData,
+    WSData,
+)
 
 class DataTypeFilter(SimpleListFilter):
     title = 'Data Type'
@@ -34,6 +41,149 @@ class DataTypeFilter(SimpleListFilter):
         elif self.value() == 'other':
             return queryset.exclude(code__regex=r'^[1-6]')
 
+class FormulaVariableInline(admin.TabularInline):
+    model = FormulaVariable
+    extra = 1
+    fields = ("variable_name", "source_type", "source_key", "default_value", "is_required", "notes")
+    classes = ['collapse']
+
+
+@admin.register(Formula)
+class FormulaAdmin(admin.ModelAdmin):
+    list_display = ("status_icon", "key", "category", "expression_short", "is_active", "version", "validation_badge", "updated_at")
+    list_filter = ("category", "is_active", "validation_status", "is_fixed")
+    search_fields = ("key", "expression", "description", "notes")
+    inlines = [FormulaVariableInline]
+    ordering = ("category", "key",)
+    list_per_page = 50
+    
+    # Make fields editable in list view
+    list_editable = ("is_active",)
+    
+    # Action buttons
+    actions = ['activate_formulas', 'deactivate_formulas', 'validate_formulas', 'export_formulas']
+    
+    fieldsets = (
+        ('Formula Identification', {
+            'fields': ('key', 'category', 'is_fixed')
+        }),
+        ('Formula Expression', {
+            'fields': ('expression', 'description'),
+            'description': 'Use code references like: LandUse_1.1, 1.1.2.1, VerbrauchData_1.4, etc.'
+        }),
+        ('Status & Validation', {
+            'fields': ('is_active', 'validation_status', 'validation_message', 'last_validated'),
+            'classes': ('collapse',)
+        }),
+        ('Version & Notes', {
+            'fields': ('version', 'notes'),
+            'classes': ('collapse',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    readonly_fields = ('created_at', 'updated_at', 'last_validated')
+    
+    def status_icon(self, obj):
+        """Show active/inactive icon"""
+        if obj.is_active:
+            return format_html('<span style="color: green; font-size: 16px;">●</span>')
+        return format_html('<span style="color: red; font-size: 16px;">○</span>')
+    status_icon.short_description = ''
+    
+    def expression_short(self, obj):
+        """Show shortened expression"""
+        expr = obj.expression or ''
+        if len(expr) > 60:
+            return format_html('<span title="{}">{}</span>', expr, expr[:60] + '...')
+        return expr
+    expression_short.short_description = 'Expression'
+    
+    def validation_badge(self, obj):
+        """Show validation status as colored badge"""
+        colors = {
+            'valid': 'green',
+            'invalid': 'red',
+            'pending': 'orange',
+            'warning': 'darkorange',
+        }
+        color = colors.get(obj.validation_status, 'gray')
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px; font-size: 11px;">{}</span>',
+            color,
+            obj.validation_status.upper()
+        )
+    validation_badge.short_description = 'Status'
+    
+    # Admin actions
+    def activate_formulas(self, request, queryset):
+        updated = queryset.update(is_active=True)
+        self.message_user(request, f'{updated} formula(s) activated.')
+    activate_formulas.short_description = "✓ Activate selected formulas"
+    
+    def deactivate_formulas(self, request, queryset):
+        updated = queryset.update(is_active=False)
+        self.message_user(request, f'{updated} formula(s) deactivated.')
+    deactivate_formulas.short_description = "✗ Deactivate selected formulas"
+    
+    def validate_formulas(self, request, queryset):
+        """Validate selected formulas"""
+        from simulator.formula_service import get_formula_service
+        from django.utils import timezone
+        
+        service = get_formula_service()
+        valid_count = 0
+        invalid_count = 0
+        
+        for formula in queryset:
+            expression = formula.expression or ''
+            
+            # Basic validation
+            if not expression or expression == 'None':
+                formula.validation_status = 'invalid'
+                formula.validation_message = 'Expression is empty or None'
+                invalid_count += 1
+            elif expression.count('(') != expression.count(')'):
+                formula.validation_status = 'invalid'
+                formula.validation_message = 'Unbalanced parentheses'
+                invalid_count += 1
+            else:
+                formula.validation_status = 'valid'
+                formula.validation_message = 'Expression syntax is valid'
+                valid_count += 1
+            
+            formula.last_validated = timezone.now()
+            formula.save()
+        
+        self.message_user(request, f'Validated {queryset.count()} formulas: {valid_count} valid, {invalid_count} invalid')
+    validate_formulas.short_description = "🔍 Validate selected formulas"
+    
+    def export_formulas(self, request, queryset):
+        """Export selected formulas as JSON"""
+        import json
+        from django.http import HttpResponse
+        
+        formulas = []
+        for formula in queryset:
+            formulas.append({
+                'key': formula.key,
+                'expression': formula.expression,
+                'description': formula.description,
+                'category': formula.category,
+                'is_fixed': formula.is_fixed,
+                'is_active': formula.is_active,
+                'version': formula.version,
+            })
+        
+        response = HttpResponse(json.dumps(formulas, indent=2), content_type='application/json')
+        response['Content-Disposition'] = 'attachment; filename="formulas_export.json"'
+        return response
+    export_formulas.short_description = "📥 Export selected formulas as JSON"
+
+
 @admin.register(LandUse)
 class LandUseAdmin(admin.ModelAdmin):
     list_display = ['code', 'name', 'status_ha', 'target_ha', 'parent', 'quelle']
@@ -52,6 +202,10 @@ class LandUseAdmin(admin.ModelAdmin):
         ('Data (Editable)', {
             'fields': ('status_ha', 'target_ha'),
             'description': 'Edit hectare values. Percentages and ratios are calculated automatically.'
+        }),
+        ('Formulas (Optional)', {
+            'fields': ('status_formula_key', 'target_formula_key'),
+            'description': 'Provide formula keys to calculate values from DB-driven formulas instead of hardcoding.'
         }),
     )
 
