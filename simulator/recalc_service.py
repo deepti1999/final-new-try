@@ -23,8 +23,11 @@ def recalc_all_renewables_full() -> int:
     target_lookup: Dict[str, float] = {}
 
     # LandUse values with LandUse_ prefix to match formulas
+    # Strip LU_ prefix from codes since formulas use numeric codes (e.g., "1.1" not "LU_1.1")
     for lu in LandUse.objects.all():
-        key = f"LandUse_{lu.code}"
+        # Convert LU_1.1 -> LandUse_1.1, LU_2.1 -> LandUse_2.1, etc.
+        clean_code = lu.code.replace('LU_', '') if lu.code.startswith('LU_') else lu.code
+        key = f"LandUse_{clean_code}"
         if lu.status_ha is not None:
             status_lookup[key] = float(lu.status_ha)
         if lu.target_ha is not None:

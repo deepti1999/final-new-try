@@ -138,8 +138,12 @@ class FormulaValidator:
         for code in codes:
             if code.startswith('LandUse_'):
                 # Check LandUse table
+                # Formulas use numeric codes (e.g., LandUse_1.1)
+                # Database stores codes with LU_ prefix (e.g., LU_1.1)
                 lookup_code = code.replace('LandUse_', '')
-                if not LandUse.objects.filter(code=lookup_code).exists():
+                # Try both with and without LU_ prefix for backwards compatibility
+                if not (LandUse.objects.filter(code=f'LU_{lookup_code}').exists() or 
+                        LandUse.objects.filter(code=lookup_code).exists()):
                     self.warnings.append(f"LandUse code not found: {lookup_code}")
                 else:
                     self.info.append(f"✓ LandUse reference valid: {lookup_code}")
