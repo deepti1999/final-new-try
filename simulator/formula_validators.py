@@ -106,17 +106,27 @@ class FormulaValidator:
         """Extract all code references from expression"""
         codes = []
         
-        # Pattern 1: Prefixed codes (LandUse_X.X, VerbrauchData_X.X, Renewable_X.X)
+        # Pattern 1: Prefixed codes (LandUse_X.X, VerbrauchData_X.X, Renewable_X.X, Verbrauch_X.X)
         prefixed_pattern = r'(?:LandUse|VerbrauchData|Verbrauch|Renewable)_([A-Za-z0-9_.]+)'
-        for match in re.finditer(prefixed_pattern, expression):
+        prefixed_matches = list(re.finditer(prefixed_pattern, expression))
+        
+        for match in prefixed_matches:
             codes.append(match.group(0))  # Full match including prefix
         
         # Pattern 2: Standalone numeric codes (X.X.X)
+        # Only add if they don't overlap with prefixed codes
         standalone_pattern = r'\b(\d+(?:\.\d+)+)\b'
-        for match in re.finditer(standalone_pattern, expression):
+        standalone_matches = list(re.finditer(standalone_pattern, expression))
+        
+        for match in standalone_matches:
             code = match.group(1)
-            # Only add if not part of a larger number (like 1000)
-            if '.' in code:
+            # Check if this match overlaps with any prefixed match (by position)
+            overlaps_with_prefixed = any(
+                match.start() >= p.start() and match.end() <= p.end() 
+                for p in prefixed_matches
+            )
+            
+            if '.' in code and not overlaps_with_prefixed:
                 codes.append(code)
         
         return list(set(codes))  # Remove duplicates
