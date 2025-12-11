@@ -33,6 +33,7 @@ class Formula(models.Model):
             ('verbrauch', 'Energy Consumption'),
             ('landuse', 'Land Use'),
             ('bilanz', 'Energy Balance'),
+            ('ws', 'Energy Storage (WS)'),
             ('other', 'Other'),
         ],
         help_text="Category for organizing formulas"

@@ -309,7 +309,10 @@ def annual_electricity_view(request):
     def get_renewable_target(code):
         return get_renewable_status_or_target(code)
     
-    # Calculate PV (K) = 1.1.2.1.2 + 1.2.1.2 (from renewable targets/status, not WS)
+    # ==================================================================================
+    # STEP 1: Calculate base renewable values (K, J, L, S, M)
+    # ==================================================================================
+    # Calculate PV (K) = 1.1.2.1.2 + 1.2.1.2
     pv_value = get_renewable_target('1.1.2.1.2') + get_renewable_target('1.2.1.2')
     
     # Calculate Wind (J) = 2.1.1.2.2 + 2.2.1.2
@@ -324,91 +327,118 @@ def annual_electricity_view(request):
     # Calculate M total (PV + Wind + Hydro ONLY, Bio is separate)
     m_total = pv_value + wind_value + hydro_value
     
-    # Get 9.2.1.5.2 value (Elektrolyse branch from M)
+    # ==================================================================================
+    # STEP 2: Calculate flows from M
+    # ==================================================================================
+    # Elektrolyse "nach Angebot" (branch from M) = 9.2.1.5.2
     ely_branch_value = get_renewable_target('9.2.1.5.2')
     
     # Gasspeicher Direktverbr = 9.2.1.5.2 * 65% (hydrogen production efficiency)
     gasspeicher_direkt = ely_branch_value * 0.65
     
-    # N/Q/T: default to renewable-derived; override from WS row 366 if present
-    n_input_branch = get_renewable_status_or_target('9.3.4')
-    n_output_branch = get_renewable_status_or_target('9.3.1')
-    gas_storage = n_output_branch * 0.65  # U default
-    q_abregelung = n_input_branch
-    t_output = (gas_storage - 160) * 0.585  # legacy fallback
-
-    try:
-        ws_row_366 = WSData.objects.get(tag_im_jahr=366)
-        q_abregelung = ws_row_366.abregelung_z or 0
-        n_input_branch = q_abregelung
-        
-        # Elektrolyse Stromspeicher (Überschuss) stays from renewable (9.3.1),
-        # but U (Gasspeicher Strom) is driven by that *65%.
-        # T (Rückverstromung) comes from WS row 366 Ausspeich. Rückverstr.
-        # We only use WS for T input, not for U.
-        if ws_row_366.einspeich is not None:
-            # Per WS logic: ElektrolyseStromspeicher (Überschuss) = Einspeich / n1 (65%)
-            n_output_branch = (ws_row_366.einspeich or 0) / 0.65 if 0.65 else 0
-            # U (Gasspeicher Strom) = N_output_branch * 65%
-            gas_storage = n_output_branch * 0.65
-        
-        if ws_row_366.ausspeich_rueckverstr is not None:
-            # T input comes from WS daily balance; convert to reconversion power
-            t_input_storage = ws_row_366.ausspeich_rueckverstr
-            t_output = t_input_storage * 0.585
-    except WSData.DoesNotExist:
-        pass
-    # Final Stromnetz zum Endverbrauch = T + O + S(Bio)
-    # O value = N - Q - Elektrolyse Stromspeicher (calculated later as n_to_right)
-    # Will be calculated after n_to_right
-    
-    # N value = M - Elektrolyse Power to Gas (M remaining)
+    # N value = M - Elektrolyse Power to Gas
     n_value = m_total - ely_branch_value
+    
+    # ==================================================================================
+    # STEP 3: Calculate flows from N (using renewable data as base)
+    # ==================================================================================
+    # Q (Abregelung) = 9.3.4
+    n_input_branch = get_renewable_status_or_target('9.3.4')
+    q_abregelung = n_input_branch
+    
+    # Elektrolyse Stromspeicher (Überschuss) = 9.3.1
+    n_output_branch = get_renewable_status_or_target('9.3.1')
+    
+    # U (Gasspeicher Strom) = Elektrolyse Stromspeicher * 65%
+    gas_storage = n_output_branch * 0.65
+    
+    # T value = U - 160 (storage offset)
+    t_value = gas_storage - 160
+    
+    # T output (Rückverstromung) = T * 58.5% (reconversion efficiency)
+    t_output = t_value * 0.585
     
     # O value = N - Q - Elektrolyse Stromspeicher
     n_to_right = n_value - q_abregelung - n_output_branch
     
+    # ==================================================================================
+    # STEP 4: Override with WS row 366 balanced values if available
+    # ==================================================================================
+    try:
+        ws_row_366 = WSData.objects.get(tag_im_jahr=366)
+        
+        # If WS row 366 has balanced values, use them
+        if ws_row_366.abregelung_z is not None and ws_row_366.abregelung_z > 0:
+            q_abregelung = ws_row_366.abregelung_z
+            n_input_branch = q_abregelung
+        
+        if ws_row_366.einspeich is not None and ws_row_366.einspeich > 0:
+            # ElektrolyseStromspeicher (Überschuss) = Einspeich / 65%
+            n_output_branch = ws_row_366.einspeich / 0.65
+            # U (Gasspeicher Strom) = Einspeich (already at 65%)
+            gas_storage = ws_row_366.einspeich
+            # T value = U - 160
+            t_value = gas_storage - 160
+        
+        if ws_row_366.ausspeich_rueckverstr is not None and ws_row_366.ausspeich_rueckverstr > 0:
+            # T output comes from WS daily balance (Ausspeich. Rückverstr. * 58.5%)
+            t_output = ws_row_366.ausspeich_rueckverstr * 0.585
+        
+        # Recalculate O with updated values
+        n_to_right = n_value - q_abregelung - n_output_branch
+        
+    except WSData.DoesNotExist:
+        pass
+    
+    # ==================================================================================
+    # STEP 5: Calculate final output
+    # ==================================================================================
     # Final Stromnetz zum Endverbrauch = T_output + O + S(Bio)
     final_stromnetz = t_output + n_to_right + bio_value
+    
+    # Calculate H2 values
+    h2_offer = ely_branch_value * 0.65  # H2 from "nach Angebot"
+    h2_surplus = n_output_branch * 0.65  # H2 from "Überschuss"
     
     context = {
         'current_section': 'annual_electricity', 
         'title': 'Annual Electricity Analysis',
         # Generation sources
-        'bio': bio_value,
-        'pv': pv_value,
-        'wind': wind_value,
-        'hydro': hydro_value,
+        'bio': round(bio_value, 2),
+        'pv': round(pv_value, 2),
+        'wind': round(wind_value, 2),
+        'hydro': round(hydro_value, 2),
         # M node
-        'm_total': m_total,
+        'm_total': round(m_total, 2),
         # Elektrolyse branch from M (9.2.1.5.2)
-        'ely_branch_value': ely_branch_value,
-        # Gasspeicher Direktverbr (9.2.1.5.2 * 65%)
-        'gasspeicher_direkt': gasspeicher_direkt,
+        'ely_branch_value': round(ely_branch_value, 2),
+        'ely_offer': round(ely_branch_value, 2),  # Same as ely_branch_value
+        # Gasspeicher Direktverbr
+        'gasspeicher_direkt': round(gasspeicher_direkt, 2),
+        # N node value
+        'n_value': round(n_value, 2),
         # N node branches
-        'n_input_branch': n_input_branch,  # 9.3.4
-        'n_output_branch': n_output_branch,  # 9.3.1
-        # Q (Abregelung)
-        'q_abregelung': q_abregelung,
-        # N value and flow to right
-        'n_value': n_value,
-        'n_to_right': n_to_right,
-        # N node
-        'n_input': 947106,  # TODO: Calculate from system
-        'n_output': 1105556,
-        # Electrolysis - ely_offer IS the same as ely_branch_value (9.2.1.5.2)
-        'ely_offer': ely_branch_value,
-        'ely_surplus': n_output_branch,  # Elektrolyse Stromspeicher value from 9.3.1
-        'h2_offer': round(ely_branch_value * 0.65),  # H2 from nach Angebot
-        'h2_surplus': round(n_output_branch * 0.65),  # H2 from Überschuss
-        # Storage
-        'gas_storage': gas_storage,  # Gasspeicher Strom (U)
-        't_value': t_output,  # T removed (kept for template compatibility)
-        'h2_to_reconv': 261,
-        'reconversion': 153925,
-        # Final
-        'final_stromnetz': final_stromnetz,  # Stromnetz zum Endverbrauch = T + O + S(Bio)
-        'final_consumption': 1105556,
+        'q_abregelung': round(q_abregelung, 2),
+        'n_input_branch': round(n_input_branch, 2),
+        'n_output_branch': round(n_output_branch, 2),
+        'ely_surplus': round(n_output_branch, 2),  # Elektrolyse Stromspeicher
+        # O value (flow to right)
+        'n_to_right': round(n_to_right, 2),
+        # H2 values
+        'h2_offer': round(h2_offer, 2),  # H2 from nach Angebot
+        'h2_surplus': round(h2_surplus, 2),  # H2 from Überschuss
+        # Storage values
+        'gas_storage': round(gas_storage, 2),  # U (Gasspeicher Strom)
+        't_value': round(t_value, 2),  # T (before reconversion)
+        't_output': round(t_output, 2),  # T output (after 58.5% reconversion)
+        # Final output
+        'final_stromnetz': round(final_stromnetz, 2),  # Stromnetz zum Endverbrauch
+        # Legacy/compatibility values
+        'n_input': round(n_input_branch, 2),
+        'n_output': round(n_output_branch, 2),
+        'h2_to_reconv': round(t_value, 2),
+        'reconversion': round(t_output, 2),
+        'final_consumption': round(final_stromnetz, 2),
     }
     return render(request, 'simulator/annual_electricity.html', context)
 

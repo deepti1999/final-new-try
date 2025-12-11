@@ -854,6 +854,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const wind = {{ wind|default:0 }};  // From 2.1.1.2.2 + 2.2.1.2
     const hydro = {{ hydro|default:0 }};  // From 3.1.1.2
     
+    // DEBUG: Log all values to console
+    console.log('=== WS DIAGRAM VALUES ===');
+    console.log('Sources: bio=' + bio + ', pv=' + pv + ', wind=' + wind + ', hydro=' + hydro);
+    
     // M: Sum of PV + Wind + Hydro (NOT Bio)
     const m_total = {{ m_total|default:0 }};
     

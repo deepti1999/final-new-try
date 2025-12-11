@@ -2,6 +2,11 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from .models import LandUse, RenewableData, VerbrauchData
 from .ws_models import WSData
+from calculation_engine.ws_engine import WSCalculator
+
+
+# Initialize WS calculator
+ws_calculator = WSCalculator()
 
 
 @receiver(post_save, sender=LandUse)
@@ -52,88 +57,54 @@ def handle_landuse_deletion(sender, instance, **kwargs):
 
 def compute_ws_diagram_reference():
     """
-    Compute Annual Electricity (WS1) reference values used by WS recalculation.
-    Returns a dict with the reference stromverbr_raumwaerm_korr_366 and the
-    component totals needed for downstream percentage splits.
+    Compute Annual Electricity (WS1) reference values using WS calculation engine.
+    Returns a dict with the reference stromverbr_raumwaerm_korr_366 and component totals.
     """
-
-    def get_renewable_target(code):
+    # Gather renewable data
+    renewable_data = {}
+    renewable_codes = ['1.1.2.1.2', '1.2.1.2', '2.1.1.2.2', '2.2.1.2', '3.1.1.2', '4.4.1', '9.2.1.5.2', '9.3.1', '9.3.4']
+    for code in renewable_codes:
         try:
             renewable = RenewableData.objects.get(code=code)
-            return float(renewable.target_value) if renewable.target_value is not None else 0
+            renewable_data[code] = {
+                'target_value': float(renewable.target_value) if renewable.target_value is not None else 0,
+                'status_value': float(renewable.status_value) if renewable.status_value is not None else 0,
+            }
         except RenewableData.DoesNotExist:
-            return 0
-
-    # Prefer status_value when available (e.g., after WS balance), otherwise fallback to target_value
-    def get_status_or_target(code):
+            renewable_data[code] = {'target_value': 0, 'status_value': 0}
+    
+    # Gather verbrauch data
+    verbrauch_data = {}
+    verbrauch_codes = ['2.9.2', '2.4']
+    for code in verbrauch_codes:
         try:
-            renewable = RenewableData.objects.get(code=code)
-            if renewable.status_value is not None:
-                return float(renewable.status_value)
-            if renewable.target_value is not None:
-                return float(renewable.target_value)
-            return 0
-        except RenewableData.DoesNotExist:
-            return 0
-
-    # For WS baseline, use renewable targets (LU-driven), not WS overrides
-    pv_value = get_renewable_target('1.1.2.1.2') + get_renewable_target('1.2.1.2')
-    wind_value = get_renewable_target('2.1.1.2.2') + get_renewable_target('2.2.1.2')
-    hydro_value = get_renewable_target('3.1.1.2')
-    bio_value = get_renewable_target('4.4.1')
-    ely_power_to_gas = get_renewable_target('9.2.1.5.2')
-    # Use status-or-target for N branches so WS baseline matches the annual diagram display
-    n_output_branch = get_status_or_target('9.3.1')
-    n_input_branch = get_status_or_target('9.3.4')
-
-    total_generation = pv_value + wind_value + hydro_value
-    remaining_after_ely = total_generation - ely_power_to_gas
-    gas_storage = n_output_branch * 0.65
-    t_value = gas_storage - 160
-    m_total = pv_value + wind_value + hydro_value
-    n_value = m_total - ely_power_to_gas
-    n_to_right = n_value - n_input_branch - n_output_branch
-    stromverbr_raumwaerm_korr_366 = (t_value * 0.585) + n_to_right + bio_value
-
-    if total_generation > 0:
-        percentage = remaining_after_ely / total_generation
-        solarstrom_366 = pv_value * percentage
-        windstrom_366 = wind_value * percentage
-        sonst_kraft_konstant_366 = hydro_value * percentage
-    else:
-        solarstrom_366 = 0
-        windstrom_366 = 0
-        sonst_kraft_konstant_366 = 0
-
-    # If WS row 366 exists, override N/Q/T inputs from WS to keep baseline aligned with diagram
+            verbrauch = VerbrauchData.objects.get(code=code)
+            verbrauch_data[code] = {
+                'ziel': float(verbrauch.ziel) if verbrauch.ziel is not None else 0,
+            }
+        except VerbrauchData.DoesNotExist:
+            verbrauch_data[code] = {'ziel': 0}
+    
+    # Use WS calculator to get reference values
+    reference_values = ws_calculator.get_reference_values(renewable_data, verbrauch_data)
+    
+    # If WS row 366 exists, override certain inputs to keep baseline aligned with diagram
     try:
         ws_366 = WSData.objects.get(tag_im_jahr=366)
         if ws_366.abregelung_z is not None:
-            n_input_branch = ws_366.abregelung_z
+            reference_values['n_input_branch'] = ws_366.abregelung_z
         if ws_366.einspeich is not None:
             n_output_branch = ws_366.einspeich / 0.65 if ws_366.einspeich else 0
+            reference_values['n_output_branch'] = n_output_branch
             gas_storage = n_output_branch * 0.65
+            reference_values['gas_storage'] = gas_storage
         if ws_366.ausspeich_rueckverstr is not None:
-            # Only T uses Ausspeich. Rückverstr.; U stays derived from Einspeich
             t_value = ws_366.ausspeich_rueckverstr * 0.585
+            reference_values['t_value'] = t_value
     except WSData.DoesNotExist:
         pass
-
-    return {
-        "stromverbr_raumwaerm_korr_366": stromverbr_raumwaerm_korr_366,
-        "pv_value": pv_value,
-        "wind_value": wind_value,
-        "hydro_value": hydro_value,
-        "bio_value": bio_value,
-        "ely_power_to_gas": ely_power_to_gas,
-        "n_output_branch": n_output_branch,
-        "n_input_branch": n_input_branch,
-        "total_generation": total_generation,
-        "remaining_after_ely": remaining_after_ely,
-        "solarstrom_366": solarstrom_366,
-        "windstrom_366": windstrom_366,
-        "sonst_kraft_konstant_366": sonst_kraft_konstant_366,
-    }
+    
+    return reference_values
 
 
 def recalculate_ws_data(stromverbr_override=None, use_diagram_reference=True):
