@@ -1,5 +1,5 @@
 from django.db import models
-from typing import Optional
+from typing import Optional, List
 
 # ALL FORMULAS ARE STORED IN DATABASE (simulator_renewabledata.formula column)
 # No external Python files are used for formula storage
@@ -85,6 +85,45 @@ class Formula(models.Model):
         """Increment version number when formula is updated"""
         self.version += 1
         self.save(update_fields=['version', 'updated_at'])
+    
+    def validate_expression(self):
+        """
+        Validate this formula's expression.
+        Updates validation_status and validation_message fields.
+        
+        Returns:
+            bool: True if valid, False otherwise
+        """
+        from simulator.formula_validators import validate_formula
+        from django.utils import timezone
+        
+        is_valid, result = validate_formula(self.key, self.expression or '', self.category)
+        
+        # Update validation fields
+        self.last_validated = timezone.now()
+        
+        if is_valid:
+            self.validation_status = 'valid'
+            msg_parts = []
+            if result.get('info'):
+                msg_parts.append(f"✓ Valid formula with {len(result['referenced_codes'])} references")
+            if result.get('warnings'):
+                self.validation_status = 'warning'
+                msg_parts.extend([f"⚠ {w}" for w in result['warnings']])
+            self.validation_message = '\n'.join(msg_parts) if msg_parts else 'Formula is valid'
+        else:
+            self.validation_status = 'invalid'
+            error_msg = '\n'.join([f"✗ {e}" for e in result.get('errors', [])])
+            warning_msg = '\n'.join([f"⚠ {w}" for w in result.get('warnings', [])])
+            self.validation_message = f"{error_msg}\n{warning_msg}".strip()
+        
+        self.save(update_fields=['validation_status', 'validation_message', 'last_validated'])
+        return is_valid
+    
+    def get_dependencies(self) -> List[str]:
+        """Get list of all code references this formula depends on"""
+        from simulator.formula_validators import get_formula_dependencies
+        return get_formula_dependencies(self.key)
 
 
 class FormulaVariable(models.Model):

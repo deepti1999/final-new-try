@@ -130,35 +130,26 @@ class FormulaAdmin(admin.ModelAdmin):
     deactivate_formulas.short_description = "✗ Deactivate selected formulas"
     
     def validate_formulas(self, request, queryset):
-        """Validate selected formulas"""
-        from simulator.formula_service import get_formula_service
-        from django.utils import timezone
-        
-        service = get_formula_service()
+        """Validate selected formulas using comprehensive validator"""
         valid_count = 0
         invalid_count = 0
+        warning_count = 0
         
         for formula in queryset:
-            expression = formula.expression or ''
+            is_valid = formula.validate_expression()
             
-            # Basic validation
-            if not expression or expression == 'None':
-                formula.validation_status = 'invalid'
-                formula.validation_message = 'Expression is empty or None'
-                invalid_count += 1
-            elif expression.count('(') != expression.count(')'):
-                formula.validation_status = 'invalid'
-                formula.validation_message = 'Unbalanced parentheses'
-                invalid_count += 1
-            else:
-                formula.validation_status = 'valid'
-                formula.validation_message = 'Expression syntax is valid'
+            if formula.validation_status == 'valid':
                 valid_count += 1
-            
-            formula.last_validated = timezone.now()
-            formula.save()
+            elif formula.validation_status == 'warning':
+                warning_count += 1
+            else:
+                invalid_count += 1
         
-        self.message_user(request, f'Validated {queryset.count()} formulas: {valid_count} valid, {invalid_count} invalid')
+        total = queryset.count()
+        self.message_user(
+            request, 
+            f'Validated {total} formulas: ✓ {valid_count} valid, ⚠ {warning_count} warnings, ✗ {invalid_count} invalid'
+        )
     validate_formulas.short_description = "🔍 Validate selected formulas"
     
     def export_formulas(self, request, queryset):
