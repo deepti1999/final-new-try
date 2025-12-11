@@ -72,9 +72,10 @@ class FormulaEvaluator:
         verbrauch_pattern = r'Verbrauch_(\d+(?:\.\d+)*)'
         verbrauch_matches = re.findall(verbrauch_pattern, expression)
         for code in verbrauch_matches:
-            if code in data_lookup:
-                value = data_lookup[code]
-                expression = expression.replace(f'Verbrauch_{code}', str(value))
+            full_key = f'Verbrauch_{code}'
+            if full_key in data_lookup:
+                value = data_lookup[full_key]
+                expression = expression.replace(full_key, str(value))
             else:
                 return None
         
@@ -82,9 +83,10 @@ class FormulaEvaluator:
         renewable_pattern = r'Renewable_(\d+(?:\.\d+)*)'
         renewable_matches = re.findall(renewable_pattern, expression)
         for code in renewable_matches:
-            if code in data_lookup:
-                value = data_lookup[code]
-                expression = expression.replace(f'Renewable_{code}', str(value))
+            full_key = f'Renewable_{code}'
+            if full_key in data_lookup:
+                value = data_lookup[full_key]
+                expression = expression.replace(full_key, str(value))
             else:
                 return None
         
